@@ -61,7 +61,7 @@ const parsePBNHand = (pbnString: string): Hand => {
   };
 };
 
-const BridgeHandSimple: React.FC<BridgeHandProps> = ({ hand, position, className = '', isDealer = false, isVulnerable = false }) => {
+const BridgeHandSimple: React.FC<BridgeHandProps> = ({ hand, position, className = '', isDealer = false }) => {
   const renderSuit = (cards: Card[], suit: Suit) => {
     const sortedCards = sortCards(cards);
     const suitColor = getSuitColor(suit);

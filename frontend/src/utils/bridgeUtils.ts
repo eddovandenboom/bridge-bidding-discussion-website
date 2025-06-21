@@ -1,4 +1,4 @@
-import { Hand, Card, Suit, Rank } from '../types/bridge';
+import type { Hand, Card, Suit, Rank } from '../types/bridge';
 
 /**
  * Parse a PBN hand string like "AKQ95.J743.A2.Q42" into a Hand object

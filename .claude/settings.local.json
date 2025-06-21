@@ -21,7 +21,18 @@
       "Bash(timeout 10s npm run dev)",
       "Bash(timeout:*)",
       "Bash(rg:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(cat:*)",
+      "Bash(snap list:*)",
+      "Bash(snap install:*)",
+      "Bash(gh repo create:*)",
+      "Bash(ssh:*)",
+      "Bash(git --version)",
+      "Bash(git push:*)",
+      "Bash(gh repo view:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

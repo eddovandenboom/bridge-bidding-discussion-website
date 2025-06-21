@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from './auth';
 
@@ -250,6 +250,9 @@ router.post('/boards/:boardId/comments', authenticateToken, async (req, res) => 
   try {
     const { boardId } = req.params;
     const { content, parentId } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
 
     // Validate input

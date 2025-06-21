@@ -20,7 +20,7 @@ const PollCreator: React.FC<PollCreatorProps> = ({ boardId, onPollCreated, onClo
     { text: '', description: '' },
     { text: '', description: '' },
   ]);
-  const [selectedBiddingTableId, setSelectedBiddingTableId] = useState<string | null>(null);
+  const [selectedBiddingTableId, setSelectedBiddingTableId] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from './auth';
 
@@ -90,7 +90,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     res.json({ label });
   } catch (error) {
     console.error('Error updating label:', error);
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && (error as any).code === 'P2025') {
       return res.status(404).json({ error: 'Label not found' });
     }
     res.status(500).json({ error: 'Failed to update label' });
@@ -109,7 +109,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Label deleted successfully' });
   } catch (error) {
     console.error('Error deleting label:', error);
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && (error as any).code === 'P2025') {
       return res.status(404).json({ error: 'Label not found' });
     }
     res.status(500).json({ error: 'Failed to delete label' });
@@ -121,6 +121,9 @@ router.post('/boards/:boardId', authenticateToken, async (req, res) => {
   try {
     const { boardId } = req.params;
     const { labelId } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
 
     if (!labelId) {

@@ -21,7 +21,7 @@ interface BiddingSequence {
 interface BiddingSequenceSelectorProps {
   boardId: string;
   selectedBiddingTableId?: string;
-  onSelect: (biddingTableId: string | null) => void;
+  onSelect: (biddingTableId: string | undefined) => void;
   className?: string;
 }
 
@@ -103,7 +103,7 @@ const BiddingSequenceSelector: React.FC<BiddingSequenceSelectorProps> = ({
                 type="radio"
                 name="biddingSequence"
                 checked={!selectedBiddingTableId}
-                onChange={() => onSelect(null)}
+                onChange={() => onSelect(undefined)}
                 className="mr-2"
               />
               <span className="text-sm">No bidding sequence</span>

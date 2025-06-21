@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Seat } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 
@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 interface PBNBoard {
   boardNumber: number;
-  dealer: string;
+  dealer: Seat;
   vulnerability: string;
   deal: string;
 }
@@ -56,13 +56,13 @@ function parsePBNFile(filePath: string): PBNTournament {
             break;
           case 'Dealer':
             // Convert single letter to full name
-            const dealerMap: { [key: string]: string } = {
+            const dealerMap: { [key: string]: Seat } = {
               'N': 'NORTH',
               'S': 'SOUTH', 
               'E': 'EAST',
               'W': 'WEST'
             };
-            currentBoard.dealer = dealerMap[value] || value;
+            currentBoard.dealer = dealerMap[value] || 'NORTH';
             break;
           case 'Vulnerable':
             // Convert PBN vulnerability notation to our format

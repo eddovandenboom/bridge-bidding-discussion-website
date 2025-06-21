@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from './auth';
 
@@ -10,6 +10,9 @@ router.post('/boards/:boardId/polls', authenticateToken, async (req, res) => {
   try {
     const { boardId } = req.params;
     const { title, description, pollType, options, biddingTableId } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
 
     // Validate input
@@ -129,6 +132,9 @@ router.post('/polls/:pollId/vote', authenticateToken, async (req, res) => {
   try {
     const { pollId } = req.params;
     const { optionId } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
 
     // Validate input
@@ -256,6 +262,9 @@ router.get('/polls/:pollId', async (req, res) => {
 router.patch('/polls/:pollId/close', authenticateToken, async (req, res) => {
   try {
     const { pollId } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
     const userRole = req.user.role;
 

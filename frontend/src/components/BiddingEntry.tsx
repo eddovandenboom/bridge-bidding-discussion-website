@@ -39,7 +39,6 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
   const [bids, setBids] = useState<Bid[]>([]);
   const [currentSeat, setCurrentSeat] = useState<'NORTH' | 'SOUTH' | 'EAST' | 'WEST'>(dealer);
   const [biddingTables, setBiddingTables] = useState<BiddingTable[]>([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alertText, setAlertText] = useState('');
@@ -77,13 +76,10 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
 
   const fetchBiddingTables = async () => {
     try {
-      setLoading(true);
       const response = await biddingAPI.getBiddingTables(boardId);
       setBiddingTables(response.biddingTables);
     } catch (err) {
       setError('Failed to load existing bidding sequences');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -282,7 +278,7 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
     return `${bid.level}${suitInfo?.symbol || bid.suit}`;
   };
 
-  const formatBidWithColor = (bid: Bid): JSX.Element => {
+  const formatBidWithColor = (bid: Bid): React.JSX.Element => {
     if (specialCalls.includes(bid.call)) {
       return <span>{bid.call}</span>;
     }
@@ -307,7 +303,7 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
     }
   };
 
-  const formatBiddingSequence = (bids: any[]): JSX.Element => {
+  const formatBiddingSequence = (bids: any[]): React.JSX.Element => {
     // Create a helper function to format individual bids
     const formatSingleBid = (bid: any): string => {
       if (bid.call === 'Pass') return 'p';
@@ -471,7 +467,7 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
                 </div>
               );
             });
-          })}
+          }).flat()}
         </div>
 
         {/* Bidding Buttons */}

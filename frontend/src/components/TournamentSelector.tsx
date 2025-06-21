@@ -27,9 +27,9 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({ onTournamentSel
       setLoading(true);
       // Use the existing tournaments API and extract only what we need
       const fullResponse = await boardAPI.getTournaments();
-      setTournaments(fullResponse.tournaments.map(t => ({
+      setTournaments(fullResponse.tournaments.map((t: any) => ({
         ...t,
-        boards: t.boards.map(b => ({ id: b.id }))
+        boards: t.boards.map((b: any) => ({ id: b.id }))
       })));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tournaments');

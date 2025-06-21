@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from './auth';
 
@@ -10,6 +10,9 @@ router.post('/boards/:boardId/bidding', authenticateToken, async (req, res) => {
   try {
     const { boardId } = req.params;
     const { bids } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
 
     // Validate input
@@ -148,6 +151,9 @@ router.put('/bidding/:biddingTableId', authenticateToken, async (req, res) => {
 router.delete('/bidding/:biddingTableId', authenticateToken, async (req, res) => {
   try {
     const { biddingTableId } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     const userId = req.user.userId;
     const userRole = req.user.role;
 
@@ -161,7 +167,7 @@ router.delete('/bidding/:biddingTableId', authenticateToken, async (req, res) =>
     res.json({ message: 'Bidding table deleted successfully' });
   } catch (error) {
     console.error('Delete bidding table error:', error);
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && (error as any).code === 'P2025') {
       return res.status(404).json({ error: 'Bidding table not found' });
     }
     res.status(500).json({ error: 'Internal server error' });

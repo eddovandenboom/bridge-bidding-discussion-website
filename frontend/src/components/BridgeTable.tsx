@@ -1,5 +1,5 @@
 import React from 'react';
-import { Seat } from '../types/bridge';
+import type { Seat } from '../types/bridge';
 import { parsePBNHand, getVulnerabilityText } from '../utils/bridgeUtils';
 import BridgeHand from './BridgeHand';
 

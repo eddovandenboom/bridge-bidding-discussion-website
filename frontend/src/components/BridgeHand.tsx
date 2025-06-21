@@ -1,5 +1,5 @@
 import React from 'react';
-import { Hand, Card, Suit } from '../types/bridge';
+import type { Hand, Card, Suit } from '../types/bridge';
 import { getSuitSymbol, getSuitColor, sortCards } from '../utils/bridgeUtils';
 
 interface BridgeHandProps {

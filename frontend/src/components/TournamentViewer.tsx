@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { boardAPI } from '../utils/api';
 import BridgeHandSimple, { parsePBNHand } from './BridgeHandSimple';
 import Comments from './Comments';
 import PollCreator from './PollCreator';
@@ -92,24 +91,6 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
     }
   };
 
-  const getVulnerabilityText = (vulnerability: string): string => {
-    switch (vulnerability) {
-      case 'None': return 'Neither vulnerable';
-      case 'NS': return 'North-South vulnerable';
-      case 'EW': return 'East-West vulnerable';
-      case 'Both': return 'Both vulnerable';
-      default: return vulnerability;
-    }
-  };
-
-  const isVulnerable = (position: string, vulnerability: string): boolean => {
-    switch (vulnerability) {
-      case 'NS': return position === 'NORTH' || position === 'SOUTH';
-      case 'EW': return position === 'EAST' || position === 'WEST';
-      case 'Both': return true;
-      default: return false;
-    }
-  };
 
 
   const formatDate = (dateString: string): string => {
