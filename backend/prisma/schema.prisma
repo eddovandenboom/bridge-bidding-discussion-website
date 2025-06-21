@@ -1,0 +1,276 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User management
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  comments      Comment[]
+  polls         Poll[]
+  pollVotes     PollVote[]
+  boardLabels   BoardLabel[]
+  biddingTables BiddingTable[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  GUEST
+}
+
+// Bridge game data
+model Tournament {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime
+  venue       String?
+  pbnUrl      String?
+  source      String   @default("1011.bridge.nl")
+  isProcessed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  boards Board[]
+
+  @@map("tournaments")
+}
+
+model Board {
+  id           String @id @default(cuid())
+  boardNumber  Int
+  dealer       Seat
+  vulnerability String // "None", "NS", "EW", "Both"
+  
+  // Card distribution (PBN format)
+  northHand String
+  southHand String
+  eastHand  String
+  westHand  String
+  
+  tournamentId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  tournament    Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  biddingTables BiddingTable[]
+  playSequences PlaySequence[]
+  polls         Poll[]
+  labels        BoardLabel[]
+
+  @@unique([tournamentId, boardNumber])
+  @@map("boards")
+}
+
+enum Seat {
+  NORTH
+  SOUTH
+  EAST
+  WEST
+}
+
+// Bidding and play data
+model BiddingTable {
+  id      String @id @default(cuid())
+  boardId String
+  userId  String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board    Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bids     Bid[]
+  comments Comment[]
+  polls    Poll[]
+
+  @@map("bidding_tables")
+}
+
+model Bid {
+  id             String  @id @default(cuid())
+  biddingTableId String
+  position       Int     // Order in the bidding sequence
+  seat           Seat
+  level          Int?    // 1-7, null for Pass/Double/Redouble
+  suit           String? // "C", "D", "H", "S", "NT", null for Pass/Double/Redouble
+  call           String  // "Pass", "Double", "Redouble", or formatted bid like "1NT"
+  isAlert        Boolean @default(false)
+  alertText      String?
+  comment        String?
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  biddingTable BiddingTable @relation(fields: [biddingTableId], references: [id], onDelete: Cascade)
+
+  @@map("bids")
+}
+
+model PlaySequence {
+  id      String @id @default(cuid())
+  boardId String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  plays PlayCard[]
+
+  @@map("play_sequences")
+}
+
+model PlayCard {
+  id             String @id @default(cuid())
+  playSequenceId String
+  trick          Int    // 1-13
+  position       Int    // 1-4 (order within trick)
+  seat           Seat
+  suit           String // "C", "D", "H", "S"
+  rank           String // "2"-"10", "J", "Q", "K", "A"
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  playSequence PlaySequence @relation(fields: [playSequenceId], references: [id], onDelete: Cascade)
+
+  @@map("play_cards")
+}
+
+// Comments and discussions
+model Comment {
+  id              String @id @default(cuid())
+  content         String
+  boardId         String
+  userId          String
+  parentId        String? // For threaded comments
+  biddingTableId  String? // Optional reference to bidding sequence
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies      Comment[]     @relation("CommentReplies")
+  biddingTable BiddingTable? @relation(fields: [biddingTableId], references: [id], onDelete: SetNull)
+
+  @@map("comments")
+}
+
+// Polling system
+model Poll {
+  id             String     @id @default(cuid())
+  title          String
+  description    String?
+  pollType       PollType
+  boardId        String
+  userId         String     // Creator
+  biddingTableId String?    // Optional reference to bidding sequence
+  isActive       Boolean    @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  biddingTable BiddingTable? @relation(fields: [biddingTableId], references: [id], onDelete: SetNull)
+  options      PollOption[]
+  votes        PollVote[]
+
+  @@map("polls")
+}
+
+enum PollType {
+  BIDDING
+  PLAY
+  GENERAL
+}
+
+model PollOption {
+  id          String @id @default(cuid())
+  pollId      String
+  text        String
+  description String?
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  poll  Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  id           String @id @default(cuid())
+  pollId       String
+  pollOptionId String
+  userId       String
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  poll       Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollOption PollOption @relation(fields: [pollOptionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId]) // One vote per user per poll
+  @@map("poll_votes")
+}
+
+// Labeling and categorization
+model Label {
+  id          String @id @default(cuid())
+  name        String @unique
+  color       String @default("#3B82F6") // Hex color
+  description String?
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  boardLabels BoardLabel[]
+
+  @@map("labels")
+}
+
+model BoardLabel {
+  id      String @id @default(cuid())
+  boardId String
+  labelId String
+  userId  String // Who applied the label
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, labelId]) // Prevent duplicate labels per board
+  @@map("board_labels")
+}

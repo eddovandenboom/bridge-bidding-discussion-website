@@ -1,0 +1,90 @@
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Starting database seed...');
+
+  // Create admin user
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@bridge.local' },
+    update: {},
+    create: {
+      username: 'admin',
+      email: 'admin@bridge.local',
+      password: adminPassword,
+      role: 'ADMIN',
+    },
+  });
+
+  // Create test user
+  const userPassword = await bcrypt.hash('user123', 10);
+  const testUser = await prisma.user.upsert({
+    where: { email: 'user@bridge.local' },
+    update: {},
+    create: {
+      username: 'bridgeplayer',
+      email: 'user@bridge.local',
+      password: userPassword,
+      role: 'USER',
+    },
+  });
+
+  // Create some common labels
+  const labels = [
+    { name: 'Slam Hand', color: '#DC2626', description: 'Hands with slam potential' },
+    { name: 'Competitive', color: '#F59E0B', description: 'Competitive bidding situations' },
+    { name: 'Sacrifice', color: '#EF4444', description: 'Sacrifice bidding' },
+    { name: 'Double', color: '#7C3AED', description: 'Hands involving doubles' },
+    { name: 'No Trump', color: '#059669', description: 'No trump contracts' },
+    { name: 'Preempt', color: '#DB2777', description: 'Preemptive bidding' },
+    { name: 'Convention', color: '#2563EB', description: 'Conventional bids and responses' },
+  ];
+
+  for (const labelData of labels) {
+    await prisma.label.upsert({
+      where: { name: labelData.name },
+      update: {},
+      create: labelData,
+    });
+  }
+
+  // Create a sample tournament
+  const tournament = await prisma.tournament.create({
+    data: {
+      name: 'Tuesday Evening Duplicate',
+      date: new Date('2024-01-09'),
+      venue: 'Bridge Club Amsterdam',
+      source: '1011.bridge.nl',
+    },
+  });
+
+  // Create a sample board
+  const board = await prisma.board.create({
+    data: {
+      boardNumber: 1,
+      dealer: 'NORTH',
+      vulnerability: 'None',
+      northHand: 'KQ95.A743.A2.Q42',
+      southHand: 'A832.KQ2.K876.A3',
+      eastHand: 'J74.J985.Q543.K7',
+      westHand: 'T6.T6.JT9.JT9865',
+      tournamentId: tournament.id,
+    },
+  });
+
+  console.log('✅ Database seeded successfully!');
+  console.log(`👤 Admin user: admin@bridge.local / admin123`);
+  console.log(`👤 Test user: user@bridge.local / user123`);
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Error seeding database:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

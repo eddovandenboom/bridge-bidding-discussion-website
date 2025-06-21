@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom bridge-themed styles */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+}
+
+@layer components {
+  /* Card suit symbols */
+  .card-spade::before {
+    content: "♠";
+    @apply text-spade font-cards;
+  }
+  
+  .card-heart::before {
+    content: "♥";
+    @apply text-heart font-cards;
+  }
+  
+  .card-diamond::before {
+    content: "♦";
+    @apply text-diamond font-cards;
+  }
+  
+  .card-club::before {
+    content: "♣";
+    @apply text-club font-cards;
+  }
+  
+  /* Bridge table styling */
+  .bridge-table {
+    @apply bg-bridge-green rounded-lg shadow-lg;
+  }
+  
+  /* Bidding box styling */
+  .bidding-box {
+    @apply grid grid-cols-5 gap-1 p-2 bg-white rounded border;
+  }
+  
+  .bid-button {
+    @apply px-2 py-1 text-sm font-medium rounded border bg-gray-50 hover:bg-gray-100 transition-colors;
+  }
+  
+  .bid-button.selected {
+    @apply bg-blue-500 text-white;
+  }
+  
+  /* Comment threading */
+  .comment-thread {
+    @apply border-l-2 border-gray-200 ml-4 pl-4;
+  }
+  
+  .comment-thread.depth-1 {
+    @apply border-blue-200;
+  }
+  
+  .comment-thread.depth-2 {
+    @apply border-green-200;
+  }
+  
+  .comment-thread.depth-3 {
+    @apply border-yellow-200;
+  }
+}
