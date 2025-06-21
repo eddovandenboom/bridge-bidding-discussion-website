@@ -1,0 +1,28 @@
+services:
+  # Web service (backend + frontend)
+  - type: web
+    name: bridge-bidding-website
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bridge-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://bridge-bidding-website.onrender.com
+    
+  # Database
+  - type: pgsql
+    name: bridge-db
+    databaseName: bridge_bidding
+    user: bridge_user
+    plan: free
