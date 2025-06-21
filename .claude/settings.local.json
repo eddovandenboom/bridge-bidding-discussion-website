@@ -39,7 +39,8 @@
       "Bash(railway project create:*)",
       "Bash(railway:*)",
       "Bash(chmod:*)",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
