@@ -16,6 +16,9 @@
     "test": "npm test --workspaces",
     "install:all": "npm install && npm install --workspaces"
   },
+  "dependencies": {
+    "@vercel/node": "^5.3.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
