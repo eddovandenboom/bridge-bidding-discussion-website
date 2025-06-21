@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# 🚀 Hetzner VPS Setup Script for Bridge Bidding Website
-# Run: curl -fsSL https://raw.githubusercontent.com/eddovandenboom/bridge-bidding-discussion-website/main/hetzner-setup.sh | bash
+# 🚀 Simple VPS Setup Script for Bridge Bidding Website (No Firewall Hassles)
+# Run: curl -fsSL https://raw.githubusercontent.com/eddovandenboom/bridge-bidding-discussion-website/main/simple-setup.sh | sudo bash
 
 set -e
 
-echo "🌉 Setting up Hetzner VPS for Bridge Bidding Website..."
-echo "=================================================="
+echo "🌉 Setting up VPS for Bridge Bidding Website (Simple Version)..."
+echo "=============================================================="
 
 # Update system
 echo "📦 Updating system packages..."
@@ -105,38 +105,9 @@ rm -f /etc/nginx/sites-enabled/default
 # Test Nginx configuration
 nginx -t
 
-# Setup firewall
-echo "🔥 Setting up firewall..."
-echo "📦 Installing UFW firewall..."
-apt install -y ufw || {
-    echo "⚠️  UFW not available in repositories. Setting up basic iptables rules..."
-    # Basic iptables setup if UFW fails
-    iptables -P INPUT ACCEPT
-    iptables -P FORWARD ACCEPT
-    iptables -P OUTPUT ACCEPT
-    iptables -F
-    iptables -A INPUT -i lo -j ACCEPT
-    iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-    iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-    iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-    iptables -A INPUT -p tcp --dport 3001 -j ACCEPT
-    echo "✅ Basic firewall rules applied"
-    exit 0
-}
-
-if command -v ufw >/dev/null 2>&1; then
-    echo "✅ UFW installed successfully!"
-    ufw --force reset
-    ufw allow OpenSSH
-    ufw allow 'Nginx Full'
-    ufw allow 3001
-    ufw --force enable
-    echo "✅ UFW firewall configured and enabled"
-else
-    echo "⚠️  UFW installation failed. Skipping firewall setup."
-    echo "   Manually configure firewall for ports: 22 (SSH), 80 (HTTP), 443 (HTTPS), 3001 (API)"
-fi
+# Skip firewall setup - let VPS provider handle it
+echo "⚠️  Skipping firewall setup - configure manually in your VPS control panel"
+echo "   Required ports: 22 (SSH), 80 (HTTP), 443 (HTTPS), 3001 (API)"
 
 # Create deployment script
 echo "🔄 Creating deployment script..."
@@ -204,7 +175,7 @@ cat > /root/DEPLOYMENT_INSTRUCTIONS.txt << EOF
 🌉 Bridge Bidding Website - Deployment Instructions
 ==================================================
 
-Your Hetzner VPS is ready! Here's how to deploy your app:
+Your VPS is ready! Here's how to deploy your app:
 
 1. Clone your repository:
    cd /var/www/bridge-app
@@ -231,6 +202,7 @@ Your Hetzner VPS is ready! Here's how to deploy your app:
    pm2 startup
 
 7. Copy frontend files:
+   mkdir -p /var/www/bridge-app/frontend/dist
    cp -r frontend/dist/* /var/www/bridge-app/frontend/dist/
 
 8. Set permissions:
@@ -258,13 +230,19 @@ Your app will be available at: http://$(curl -s ifconfig.me)
    - pm2 restart bridge-app (restart app)
    - systemctl status nginx (check nginx)
 
-Cost: €7.85/month (vs $175/month on Render) 💸
+⚠️  FIREWALL: Configure in your VPS control panel
+   Required ports: 22 (SSH), 80 (HTTP), 443 (HTTPS), 3001 (API)
+
+Cost: Much cheaper than \$175/month platforms! 💸
 EOF
 
 echo ""
-echo "✅ Hetzner VPS setup complete!"
+echo "✅ VPS setup complete!"
 echo "📍 Your server IP: $(curl -s ifconfig.me)"
 echo "📖 Next steps: cat /root/DEPLOYMENT_INSTRUCTIONS.txt"
 echo ""
 echo "🎉 Ready to deploy your Bridge Bidding Website!"
-echo "💰 Total cost: €7.85/month (25x cheaper than Render!)"
+echo "💰 No expensive platform fees - just your cheap VPS!"
+echo ""
+echo "⚠️  IMPORTANT: Configure firewall in your VPS control panel"
+echo "   Allow ports: 22, 80, 443, 3001"
