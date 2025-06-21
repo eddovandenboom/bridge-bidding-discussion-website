@@ -32,7 +32,14 @@
       "Bash(git --version)",
       "Bash(git push:*)",
       "Bash(gh repo view:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(railway login:*)",
+      "Bash(railway init:*)",
+      "Bash(railway project create:*)",
+      "Bash(railway:*)",
+      "Bash(chmod:*)",
+      "Bash(vercel:*)"
     ],
     "deny": []
   }

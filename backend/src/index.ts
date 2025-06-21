@@ -53,9 +53,15 @@ app.use((err: any, req: any, res: any, next: any) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🌉 Bridge API server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/`);
-  console.log(`🃏 Board endpoints: http://localhost:${PORT}/api/tournaments`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🌉 Bridge API server running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/`);
+    console.log(`🃏 Board endpoints: http://localhost:${PORT}/api/tournaments`);
+  });
+}
+
+// Export for Vercel
+export default app;
