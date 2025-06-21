@@ -49,7 +49,6 @@ const MainApp: React.FC = () => {
               <div className="text-2xl">🌉</div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Bridge Discussion</h1>
-                <p className="text-xs text-gray-500">Tuesday Evening Analysis</p>
               </div>
             </div>
 
@@ -61,17 +60,8 @@ const MainApp: React.FC = () => {
                   currentView === 'tournaments' ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
-                Tournaments
+                Home
               </button>
-              <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
-                Recent Boards
-              </a>
-              <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
-                Labels
-              </a>
-              <a href="#" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
-                All Polls
-              </a>
             </nav>
 
             {/* User Menu */}

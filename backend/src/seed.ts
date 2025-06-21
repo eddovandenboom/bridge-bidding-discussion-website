@@ -51,29 +51,7 @@ async function main() {
     });
   }
 
-  // Create a sample tournament
-  const tournament = await prisma.tournament.create({
-    data: {
-      name: 'Tuesday Evening Duplicate',
-      date: new Date('2024-01-09'),
-      venue: 'Bridge Club Amsterdam',
-      source: '1011.bridge.nl',
-    },
-  });
-
-  // Create a sample board
-  const board = await prisma.board.create({
-    data: {
-      boardNumber: 1,
-      dealer: 'NORTH',
-      vulnerability: 'None',
-      northHand: 'KQ95.A743.A2.Q42',
-      southHand: 'A832.KQ2.K876.A3',
-      eastHand: 'J74.J985.Q543.K7',
-      westHand: 'T6.T6.JT9.JT9865',
-      tournamentId: tournament.id,
-    },
-  });
+  // No demo tournament - users can import their own PBN files
 
   console.log('✅ Database seeded successfully!');
   console.log(`👤 Admin user: admin@bridge.local / admin123`);
