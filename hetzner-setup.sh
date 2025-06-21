@@ -107,9 +107,48 @@ nginx -t
 
 # Setup firewall
 echo "🔥 Setting up firewall..."
-ufw allow OpenSSH
-ufw allow 'Nginx Full'
-ufw --force enable
+if command -v ufw >/dev/null 2>&1; then
+    echo "✅ Using UFW firewall..."
+    ufw allow OpenSSH
+    ufw allow 'Nginx Full'
+    ufw --force enable
+else
+    echo "📦 Installing UFW firewall..."
+    apt install -y ufw
+    if command -v ufw >/dev/null 2>&1; then
+        echo "✅ UFW installed successfully!"
+        ufw allow OpenSSH
+        ufw allow 'Nginx Full'
+        ufw --force enable
+    else
+        echo "⚠️  UFW installation failed. Trying alternative firewall setup..."
+        if command -v firewalld >/dev/null 2>&1; then
+            echo "✅ Using firewalld..."
+            systemctl start firewalld
+            systemctl enable firewalld
+            firewall-cmd --permanent --add-service=ssh
+            firewall-cmd --permanent --add-service=http
+            firewall-cmd --permanent --add-service=https
+            firewall-cmd --reload
+        elif command -v iptables >/dev/null 2>&1; then
+            echo "✅ Using iptables..."
+            iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+            iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+            iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+            iptables -A INPUT -p tcp --dport 3001 -j ACCEPT
+            iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+            iptables -A INPUT -i lo -j ACCEPT
+            iptables -P INPUT DROP
+            # Save iptables rules
+            if command -v iptables-save >/dev/null 2>&1; then
+                iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+            fi
+        else
+            echo "⚠️  No firewall available - server ports are open (consider manual firewall setup)"
+            echo "   Required ports: 22 (SSH), 80 (HTTP), 443 (HTTPS), 3001 (API)"
+        fi
+    fi
+fi
 
 # Create deployment script
 echo "🔄 Creating deployment script..."
