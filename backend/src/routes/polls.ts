@@ -159,7 +159,7 @@ router.post('/polls/:pollId/vote', authenticateToken, async (req, res) => {
     }
 
     // Verify option belongs to this poll
-    const option = poll.options.find(opt => opt.id === optionId);
+    const option = poll.options.find((opt: any) => opt.id === optionId);
     if (!option) {
       return res.status(400).json({ error: 'Invalid option for this poll' });
     }

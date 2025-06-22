@@ -1,8 +1,11 @@
-import { PrismaClient, Seat } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 
 const prisma = new PrismaClient();
+
+// Define Seat type locally
+type Seat = 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
 
 interface PBNBoard {
   boardNumber: number;

@@ -94,7 +94,7 @@ router.get('/search', async (req, res) => {
     });
 
     // Filter out tournaments with no matching boards if board filters were applied
-    const filteredTournaments = tournaments.filter(tournament => 
+    const filteredTournaments = tournaments.filter((tournament: any) => 
       tournament.boards.length > 0 || Object.keys(boardFilters).length === 0
     );
 
