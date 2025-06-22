@@ -11,7 +11,7 @@ echo "🚀 Starting Bridge Bidding Discussion Website deployment..."
 echo "📦 Installing dependencies..."
 apt update && apt upgrade -y
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt install -y nodejs postgresql postgresql-contrib nginx
+apt install -y nodejs postgresql postgresql-contrib nginx git
 
 # Setup PostgreSQL with proper permissions
 echo "🗄️ Setting up PostgreSQL..."
