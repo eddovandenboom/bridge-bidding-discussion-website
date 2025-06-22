@@ -40,7 +40,10 @@
       "Bash(railway:*)",
       "Bash(chmod:*)",
       "Bash(vercel:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

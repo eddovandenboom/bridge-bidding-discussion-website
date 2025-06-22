@@ -101,6 +101,10 @@ docker-compose exec backend npx prisma migrate deploy
 docker-compose exec backend npx prisma db seed
 ```
 
+### VPS Deployment
+
+For production deployment on a VPS, see [DEPLOYMENT.md](DEPLOYMENT.md) for complete setup instructions using the automated setup script.
+
 ## Project Structure
 
 ```
