@@ -52,7 +52,7 @@ EOF
 
 # Install dependencies and build
 echo "🔧 Building application..."
-npm install
+npm install --include=dev
 cd backend
 npx prisma migrate deploy
 npx prisma generate

@@ -14,8 +14,11 @@
     "db:seed": "tsx src/seed.ts",
     "db:clear-tournaments": "tsx src/clear-tournaments.ts"
   },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
+  },
   "dependencies": {
-    "@prisma/client": "^5.7.1",
+    "@prisma/client": "latest",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -28,7 +31,7 @@
     "node-cron": "^3.0.3",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "prisma": "^5.7.1"
+    "prisma": "latest"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
