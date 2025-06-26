@@ -54,7 +54,7 @@ router.get('/search', async (req, res) => {
 
     // Build label filter
     if (labelIds && Array.isArray(labelIds) && labelIds.length > 0) {
-      boardFilters.labels = {
+      boardFilters.labelStatuses = {
         some: {
           labelId: {
             in: labelIds as string[]
@@ -62,7 +62,7 @@ router.get('/search', async (req, res) => {
         }
       };
     } else if (labelIds && typeof labelIds === 'string') {
-      boardFilters.labels = {
+      boardFilters.labelStatuses = {
         some: {
           labelId: labelIds
         }
@@ -76,7 +76,7 @@ router.get('/search', async (req, res) => {
           where: boardFilters,
           orderBy: { boardNumber: 'asc' },
           include: {
-            labels: {
+            labelStatuses: {
               include: {
                 label: true
               }
@@ -113,7 +113,7 @@ router.get('/tournaments', async (req, res) => {
         boards: {
           orderBy: { boardNumber: 'asc' },
           include: {
-            labels: {
+            labelStatuses: {
               include: {
                 label: true
               }
@@ -142,7 +142,7 @@ router.get('/tournaments/:tournamentId', async (req, res) => {
         boards: {
           orderBy: { boardNumber: 'asc' },
           include: {
-            labels: {
+            labelStatuses: {
               include: {
                 label: true
               }
@@ -223,7 +223,7 @@ router.get('/boards/:boardId', async (req, res) => {
           },
           where: { isActive: true }
         },
-        labels: {
+        labelVotes: {
           include: {
             label: true,
             user: {
@@ -317,7 +317,7 @@ router.get('/recent', async (req, res) => {
             }
           }
         },
-        labels: {
+        labelStatuses: {
           include: {
             label: true
           }

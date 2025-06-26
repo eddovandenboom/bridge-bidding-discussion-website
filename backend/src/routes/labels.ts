@@ -1,17 +1,62 @@
 import express, { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from './auth';
+import { authenticateToken, authenticateTokenOptional } from './auth';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Get all labels
+// Configuration for global label thresholds
+const GLOBAL_CONFIG = {
+  minVotes: 3,        // minimum total votes needed for global consideration
+  threshold: 0.5      // 50% must vote YES for global status
+};
+
+// Helper function to calculate if a label is globally applied
+function isGloballyApplied(voteCount: number): boolean {
+  return voteCount >= GLOBAL_CONFIG.minVotes;
+}
+
+// Helper function to update board label status
+async function updateBoardLabelStatus(boardId: string, labelId: string) {
+  const voteCount = await prisma.boardLabelVote.count({
+    where: {
+      boardId,
+      labelId,
+    },
+  });
+
+  const isGlobal = isGloballyApplied(voteCount);
+
+  await prisma.boardLabelStatus.upsert({
+    where: {
+      boardId_labelId: {
+        boardId,
+        labelId,
+      },
+    },
+    update: {
+      voteCount,
+      isGlobal,
+    },
+    create: {
+      boardId,
+      labelId,
+      voteCount,
+      isGlobal,
+    },
+  });
+}
+
+// Get all labels with usage statistics
 router.get('/', async (req, res) => {
   try {
     const labels = await prisma.label.findMany({
       include: {
         _count: {
-          select: { boardLabels: true }
+          select: { 
+            boardLabelVotes: true,
+            boardLabelStatuses: true
+          }
         }
       },
       orderBy: { name: 'asc' }
@@ -116,133 +161,208 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Apply label to board
-router.post('/boards/:boardId', authenticateToken, async (req, res) => {
+// Vote on whether a label applies to a board (toggle)
+router.post('/boards/:boardId/labels/:labelId/vote', authenticateToken, async (req, res) => {
   try {
-    const { boardId } = req.params;
-    const { labelId } = req.body;
+    const { boardId, labelId } = req.params;
+    
     if (!req.user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     const userId = req.user.userId;
 
-    if (!labelId) {
-      return res.status(400).json({ error: 'Label ID is required' });
-    }
+    const board = await prisma.board.findUnique({ where: { id: boardId } });
+    if (!board) return res.status(404).json({ error: 'Board not found' });
 
-    // Check if board exists
-    const board = await prisma.board.findUnique({
-      where: { id: boardId }
+    const label = await prisma.label.findUnique({ where: { id: labelId } });
+    if (!label) return res.status(404).json({ error: 'Label not found' });
+
+    const existingVote = await prisma.boardLabelVote.findUnique({
+      where: {
+        boardId_labelId_userId: {
+          boardId,
+          labelId,
+          userId,
+        },
+      },
     });
 
-    if (!board) {
-      return res.status(404).json({ error: 'Board not found' });
+    let vote;
+    let userVoted;
+
+    if (existingVote) {
+      // Unvote
+      await prisma.boardLabelVote.delete({
+        where: {
+          id: existingVote.id,
+        },
+      });
+      vote = null;
+      userVoted = false;
+    } else {
+      // Vote
+      vote = await prisma.boardLabelVote.create({
+        data: {
+          boardId,
+          labelId,
+          userId,
+        },
+      });
+      userVoted = true;
     }
 
-    // Check if label exists
-    const label = await prisma.label.findUnique({
-      where: { id: labelId }
-    });
+    await updateBoardLabelStatus(boardId, labelId);
 
-    if (!label) {
-      return res.status(404).json({ error: 'Label not found' });
-    }
-
-    // Check if label is already applied
-    const existingBoardLabel = await prisma.boardLabel.findUnique({
+    const status = await prisma.boardLabelStatus.findUnique({
       where: {
         boardId_labelId: {
           boardId,
-          labelId
-        }
-      }
-    });
-
-    if (existingBoardLabel) {
-      return res.status(409).json({ error: 'Label already applied to this board' });
-    }
-
-    // Apply the label
-    const boardLabel = await prisma.boardLabel.create({
-      data: {
-        boardId,
-        labelId,
-        userId
+          labelId,
+        },
       },
-      include: {
-        label: true,
-        user: {
-          select: {
-            id: true,
-            username: true
-          }
-        }
-      }
     });
 
-    res.status(201).json({ boardLabel });
+    res.json({ vote, status, userVoted });
   } catch (error) {
-    console.error('Error applying label to board:', error);
-    res.status(500).json({ error: 'Failed to apply label to board' });
+    console.error('Error voting on label:', error);
+    res.status(500).json({ error: 'Failed to vote on label' });
   }
 });
 
-// Remove label from board
-router.delete('/boards/:boardId/:labelId', authenticateToken, async (req, res) => {
+// Remove vote on a label for a board
+router.delete('/boards/:boardId/labels/:labelId/vote', authenticateToken, async (req, res) => {
   try {
     const { boardId, labelId } = req.params;
+    
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    const userId = req.user.userId;
 
-    const boardLabel = await prisma.boardLabel.findUnique({
+    // Check if vote exists
+    const existingVote = await prisma.boardLabelVote.findUnique({
       where: {
-        boardId_labelId: {
+        boardId_labelId_userId: {
           boardId,
-          labelId
+          labelId,
+          userId
         }
       }
     });
 
-    if (!boardLabel) {
-      return res.status(404).json({ error: 'Label not applied to this board' });
+    if (!existingVote) {
+      return res.status(404).json({ error: 'Vote not found' });
     }
 
-    await prisma.boardLabel.delete({
+    // Delete the vote
+    await prisma.boardLabelVote.delete({
       where: {
-        boardId_labelId: {
+        boardId_labelId_userId: {
           boardId,
-          labelId
+          labelId,
+          userId
         }
       }
     });
 
-    res.json({ message: 'Label removed from board successfully' });
+    // Update the computed status
+    await updateBoardLabelStatus(boardId, labelId);
+
+    res.json({ message: 'Vote removed successfully' });
   } catch (error) {
-    console.error('Error removing label from board:', error);
-    res.status(500).json({ error: 'Failed to remove label from board' });
+    console.error('Error removing vote:', error);
+    res.status(500).json({ error: 'Failed to remove vote' });
   }
 });
 
-// Get labels for a specific board
-router.get('/boards/:boardId', async (req, res) => {
+// Get all label voting status for a board
+router.get('/boards/:boardId/status', authenticateTokenOptional, async (req, res) => {
   try {
     const { boardId } = req.params;
+    const userId = req.user?.userId; // Optional - for showing user's vote
 
-    const boardLabels = await prisma.boardLabel.findMany({
-      where: { boardId },
-      include: {
-        label: true,
-        user: {
-          select: {
-            id: true,
-            username: true
-          }
-        }
-      },
-      orderBy: {
-        label: {
-          name: 'asc'
-        }
-      }
+    // Get all labels
+    const labels = await prisma.label.findMany({
+      orderBy: { name: 'asc' }
     });
+
+    // Get voting status for each label
+    const labelStatuses = await Promise.all(
+      labels.map(async (label) => {
+        // Get user's vote if authenticated
+        let userVoted = false;
+        if (userId) {
+          const vote = await prisma.boardLabelVote.findUnique({
+            where: {
+              boardId_labelId_userId: {
+                boardId,
+                labelId: label.id,
+                userId,
+              },
+            },
+          });
+          userVoted = !!vote;
+        }
+
+        // Get computed status
+        const status = await prisma.boardLabelStatus.findUnique({
+          where: {
+            boardId_labelId: {
+              boardId,
+              labelId: label.id
+            }
+          }
+        });
+
+        return {
+          id: label.id,
+          name: label.name,
+          color: label.color,
+          description: label.description,
+          userVoted,
+          voteCount: status?.voteCount || 0,
+          isGloballyApplied: status?.isGlobal || false,
+        };
+      })
+    );
+
+    res.json({ labels: labelStatuses });
+  } catch (error) {
+    console.error('Error fetching board label status:', error);
+    res.status(500).json({ error: 'Failed to fetch board label status' });
+  }
+});
+
+// Legacy endpoint: Get labels for a specific board (backwards compatibility)
+// Define the expected shape of the API response
+interface LabelStatus {
+  id: string;
+  name: string;
+  color: string;
+  isGloballyApplied: boolean;
+}
+
+interface StatusResponse {
+  labels: LabelStatus[];
+}
+
+router.get('/boards/:boardId', async (req, res) => {
+  try {
+    // Redirect to the new status endpoint
+    const response = await fetch(`${req.protocol}://${req.get('host')}/api/labels/boards/${req.params.boardId}/status`);
+    const data = await response.json() as StatusResponse;
+    
+    // Transform to old format for compatibility
+    const boardLabels = data.labels
+      .filter((label) => label.isGloballyApplied)
+      .map((label) => ({
+        id: `${req.params.boardId}-${label.id}`,
+        label: {
+          id: label.id,
+          name: label.name,
+          color: label.color
+        }
+      }));
 
     res.json({ boardLabels });
   } catch (error) {

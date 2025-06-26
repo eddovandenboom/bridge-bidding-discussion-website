@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl"]
 }
 
 datasource db {
@@ -10,33 +8,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User management
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  role      UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  comments      Comment[]
-  polls         Poll[]
-  pollVotes     PollVote[]
-  boardLabels   BoardLabel[]
-  biddingTables BiddingTable[]
+  id              String           @id @default(cuid())
+  username        String           @unique
+  email           String           @unique
+  password        String
+  role            UserRole         @default(USER)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  biddingTables   BiddingTable[]
+  boardLabelVotes BoardLabelVote[]
+  comments        Comment[]
+  pollVotes       PollVote[]
+  polls           Poll[]
 
   @@map("users")
 }
 
-enum UserRole {
-  ADMIN
-  USER
-  GUEST
-}
-
-// Bridge game data
 model Tournament {
   id          String   @id @default(cuid())
   name        String
@@ -47,39 +35,201 @@ model Tournament {
   isProcessed Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Relations
-  boards Board[]
+  boards      Board[]
 
   @@map("tournaments")
 }
 
 model Board {
-  id           String @id @default(cuid())
-  boardNumber  Int
-  dealer       Seat
-  vulnerability String // "None", "NS", "EW", "Both"
-  
-  // Card distribution (PBN format)
-  northHand String
-  southHand String
-  eastHand  String
-  westHand  String
-  
-  tournamentId String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  tournament    Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  comments      Comment[]
+  id            String             @id @default(cuid())
+  boardNumber   Int
+  dealer        Seat
+  vulnerability String
+  northHand     String
+  southHand     String
+  eastHand      String
+  westHand      String
+  tournamentId  String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   biddingTables BiddingTable[]
+  labelStatuses BoardLabelStatus[]
+  labelVotes    BoardLabelVote[]
+  tournament    Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  comments      Comment[]
   playSequences PlaySequence[]
   polls         Poll[]
-  labels        BoardLabel[]
 
   @@unique([tournamentId, boardNumber])
   @@map("boards")
+}
+
+model BiddingTable {
+  id        String    @id @default(cuid())
+  boardId   String
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  board     Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bids      Bid[]
+  comments  Comment[]
+  polls     Poll[]
+
+  @@map("bidding_tables")
+}
+
+model Bid {
+  id             String       @id @default(cuid())
+  biddingTableId String
+  position       Int
+  seat           Seat
+  level          Int?
+  suit           String?
+  call           String
+  isAlert        Boolean      @default(false)
+  alertText      String?
+  comment        String?
+  createdAt      DateTime     @default(now())
+  biddingTable   BiddingTable @relation(fields: [biddingTableId], references: [id], onDelete: Cascade)
+
+  @@map("bids")
+}
+
+model PlaySequence {
+  id        String     @id @default(cuid())
+  boardId   String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  plays     PlayCard[]
+  board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@map("play_sequences")
+}
+
+model PlayCard {
+  id             String       @id @default(cuid())
+  playSequenceId String
+  trick          Int
+  position       Int
+  seat           Seat
+  suit           String
+  rank           String
+  createdAt      DateTime     @default(now())
+  playSequence   PlaySequence @relation(fields: [playSequenceId], references: [id], onDelete: Cascade)
+
+  @@map("play_cards")
+}
+
+model Comment {
+  id             String        @id @default(cuid())
+  content        String
+  boardId        String
+  userId         String
+  parentId       String?
+  biddingTableId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  biddingTable   BiddingTable? @relation(fields: [biddingTableId], references: [id])
+  board          Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  parent         Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies        Comment[]     @relation("CommentReplies")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Poll {
+  id             String        @id @default(cuid())
+  title          String
+  description    String?
+  pollType       PollType
+  boardId        String
+  userId         String
+  biddingTableId String?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  options        PollOption[]
+  votes          PollVote[]
+  biddingTable   BiddingTable? @relation(fields: [biddingTableId], references: [id])
+  board          Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("polls")
+}
+
+model PollOption {
+  id          String     @id @default(cuid())
+  pollId      String
+  text        String
+  description String?
+  createdAt   DateTime   @default(now())
+  poll        Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes       PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  id           String     @id @default(cuid())
+  pollId       String
+  pollOptionId String
+  userId       String
+  createdAt    DateTime   @default(now())
+  poll         Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollOption   PollOption @relation(fields: [pollOptionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+  @@map("poll_votes")
+}
+
+model Label {
+  id                 String             @id @default(cuid())
+  name               String             @unique
+  color              String             @default("#3B82F6")
+  description        String?
+  createdAt          DateTime           @default(now())
+  boardLabelStatuses BoardLabelStatus[]
+  boardLabelVotes    BoardLabelVote[]
+
+  @@map("labels")
+}
+
+model BoardLabelVote {
+  id        String   @id @default(cuid())
+  boardId   String
+  labelId   String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  label     Label    @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, labelId, userId])
+  @@map("board_label_votes")
+}
+
+model BoardLabelStatus {
+  id         String   @id @default(cuid())
+  boardId    String
+  labelId    String
+  voteCount  Int      @default(0)
+  isGlobal   Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+  board      Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  label      Label    @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, labelId])
+  @@map("board_label_status")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  GUEST
 }
 
 enum Seat {
@@ -89,188 +239,8 @@ enum Seat {
   WEST
 }
 
-// Bidding and play data
-model BiddingTable {
-  id      String @id @default(cuid())
-  boardId String
-  userId  String
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  board    Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bids     Bid[]
-  comments Comment[]
-  polls    Poll[]
-
-  @@map("bidding_tables")
-}
-
-model Bid {
-  id             String  @id @default(cuid())
-  biddingTableId String
-  position       Int     // Order in the bidding sequence
-  seat           Seat
-  level          Int?    // 1-7, null for Pass/Double/Redouble
-  suit           String? // "C", "D", "H", "S", "NT", null for Pass/Double/Redouble
-  call           String  // "Pass", "Double", "Redouble", or formatted bid like "1NT"
-  isAlert        Boolean @default(false)
-  alertText      String?
-  comment        String?
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  biddingTable BiddingTable @relation(fields: [biddingTableId], references: [id], onDelete: Cascade)
-
-  @@map("bids")
-}
-
-model PlaySequence {
-  id      String @id @default(cuid())
-  boardId String
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  board Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  plays PlayCard[]
-
-  @@map("play_sequences")
-}
-
-model PlayCard {
-  id             String @id @default(cuid())
-  playSequenceId String
-  trick          Int    // 1-13
-  position       Int    // 1-4 (order within trick)
-  seat           Seat
-  suit           String // "C", "D", "H", "S"
-  rank           String // "2"-"10", "J", "Q", "K", "A"
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  playSequence PlaySequence @relation(fields: [playSequenceId], references: [id], onDelete: Cascade)
-
-  @@map("play_cards")
-}
-
-// Comments and discussions
-model Comment {
-  id              String @id @default(cuid())
-  content         String
-  boardId         String
-  userId          String
-  parentId        String? // For threaded comments
-  biddingTableId  String? // Optional reference to bidding sequence
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent       Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
-  replies      Comment[]     @relation("CommentReplies")
-  biddingTable BiddingTable? @relation(fields: [biddingTableId], references: [id], onDelete: SetNull)
-
-  @@map("comments")
-}
-
-// Polling system
-model Poll {
-  id             String     @id @default(cuid())
-  title          String
-  description    String?
-  pollType       PollType
-  boardId        String
-  userId         String     // Creator
-  biddingTableId String?    // Optional reference to bidding sequence
-  isActive       Boolean    @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  biddingTable BiddingTable? @relation(fields: [biddingTableId], references: [id], onDelete: SetNull)
-  options      PollOption[]
-  votes        PollVote[]
-
-  @@map("polls")
-}
-
 enum PollType {
   BIDDING
   PLAY
   GENERAL
-}
-
-model PollOption {
-  id          String @id @default(cuid())
-  pollId      String
-  text        String
-  description String?
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  poll  Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  votes PollVote[]
-
-  @@map("poll_options")
-}
-
-model PollVote {
-  id           String @id @default(cuid())
-  pollId       String
-  pollOptionId String
-  userId       String
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  poll       Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  pollOption PollOption @relation(fields: [pollOptionId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([pollId, userId]) // One vote per user per poll
-  @@map("poll_votes")
-}
-
-// Labeling and categorization
-model Label {
-  id          String @id @default(cuid())
-  name        String @unique
-  color       String @default("#3B82F6") // Hex color
-  description String?
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  boardLabels BoardLabel[]
-
-  @@map("labels")
-}
-
-model BoardLabel {
-  id      String @id @default(cuid())
-  boardId String
-  labelId String
-  userId  String // Who applied the label
-  
-  createdAt DateTime @default(now())
-
-  // Relations
-  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([boardId, labelId]) // Prevent duplicate labels per board
-  @@map("board_labels")
 }

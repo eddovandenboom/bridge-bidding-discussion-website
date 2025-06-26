@@ -170,4 +170,25 @@ function authenticateToken(req: Request, res: Response, next: NextFunction) {
   });
 }
 
-export { router as authRouter, authenticateToken };
+// Middleware to optionally authenticate JWT token
+function authenticateTokenOptional(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return next();
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret', (err: any, decoded: any) => {
+    if (err) {
+      return next(); // Invalid token, proceed without authentication
+    }
+    req.user = {
+      userId: decoded.userId,
+      username: decoded.username,
+      role: decoded.role
+    };
+    next();
+  });
+}
+export { router as authRouter, authenticateToken, authenticateTokenOptional };
