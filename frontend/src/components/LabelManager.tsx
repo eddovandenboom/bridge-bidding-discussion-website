@@ -72,7 +72,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
     try {
       setLoading(true);
       const response = await labelAPI.getBoardLabelStatus(boardId);
-      setLabelStatuses(response.labels.sort((a, b) => b.voteCount - a.voteCount));
+      setLabelStatuses(response.labels.sort((a: LabelStatus, b: LabelStatus) => b.voteCount - a.voteCount));
     } catch (err) {
       setError('Failed to load board label status');
     } finally {
@@ -150,7 +150,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
               }
             : status
         );
-        return newStatuses.sort((a, b) => b.voteCount - a.voteCount);
+        return newStatuses.sort((a: LabelStatus, b: LabelStatus) => b.voteCount - a.voteCount);
       });
 
       onLabelChange?.();
