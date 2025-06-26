@@ -24,7 +24,7 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://bridge_user:bridge_password@db:5432/bridge_discussion
       - PORT=3001
-      - FRONTEND_URL=http://localhost:5173
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "3001:3001"
     volumes:
