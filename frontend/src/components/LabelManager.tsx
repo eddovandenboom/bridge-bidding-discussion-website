@@ -7,9 +7,16 @@ interface Label {
   name: string;
   color: string;
   description?: string;
-  _count?: {
-    boardLabels: number;
-  };
+}
+
+interface LabelStatus {
+  id: string;
+  name: string;
+  color: string;
+  description?: string;
+  userVoted: boolean;
+  voteCount: number;
+  isGloballyApplied: boolean;
 }
 
 interface LabelManagerProps {
@@ -25,7 +32,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
 }) => {
   const { isAuthenticated } = useAuth();
   const [labels, setLabels] = useState<Label[]>([]);
-  const [boardLabels, setBoardLabels] = useState<any[]>([]);
+  const [labelStatuses, setLabelStatuses] = useState<LabelStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -36,22 +43,15 @@ const LabelManager: React.FC<LabelManagerProps> = ({
   });
 
   const predefinedColors = [
-    '#3B82F6', // Blue
-    '#10B981', // Green
-    '#F59E0B', // Yellow
-    '#EF4444', // Red
-    '#8B5CF6', // Purple
-    '#F97316', // Orange
-    '#06B6D4', // Cyan
-    '#84CC16', // Lime
-    '#EC4899', // Pink
-    '#6B7280'  // Gray
+    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+    '#F97316', '#06B6D4', '#84CC16', '#EC4899', '#6B7280'
   ];
 
   useEffect(() => {
-    fetchLabels();
-    if (boardId && showBoardLabels) {
-      fetchBoardLabels();
+    if (showBoardLabels && boardId) {
+      fetchBoardLabelStatus();
+    } else {
+      fetchLabels();
     }
   }, [boardId, showBoardLabels]);
 
@@ -67,14 +67,16 @@ const LabelManager: React.FC<LabelManagerProps> = ({
     }
   };
 
-  const fetchBoardLabels = async () => {
+  const fetchBoardLabelStatus = async () => {
     if (!boardId) return;
-    
     try {
-      const response = await labelAPI.getBoardLabels(boardId);
-      setBoardLabels(response.boardLabels);
+      setLoading(true);
+      const response = await labelAPI.getBoardLabelStatus(boardId);
+      setLabelStatuses(response.labels.sort((a, b) => b.voteCount - a.voteCount));
     } catch (err) {
-      console.error('Failed to load board labels:', err);
+      setError('Failed to load board label status');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,9 +93,13 @@ const LabelManager: React.FC<LabelManagerProps> = ({
       
       setNewLabel({ name: '', color: '#3B82F6', description: '' });
       setShowCreateForm(false);
-      await fetchLabels();
       
-      if (onLabelChange) onLabelChange();
+      if (showBoardLabels && boardId) {
+        await fetchBoardLabelStatus();
+      } else {
+        await fetchLabels();
+      }
+      onLabelChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create label');
     }
@@ -105,37 +111,56 @@ const LabelManager: React.FC<LabelManagerProps> = ({
     try {
       setError(null);
       await labelAPI.deleteLabel(labelId);
-      await fetchLabels();
       
-      if (onLabelChange) onLabelChange();
+      if (showBoardLabels && boardId) {
+        await fetchBoardLabelStatus();
+      } else {
+        await fetchLabels();
+      }
+      onLabelChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete label');
     }
   };
 
-  const toggleBoardLabel = async (labelId: string) => {
+  const handleVoteChange = async (labelId: string) => {
     if (!isAuthenticated || !boardId) return;
 
-    const isApplied = boardLabels.some(bl => bl.label.id === labelId);
+    const originalStatuses = [...labelStatuses];
+    setLabelStatuses(prevStatuses =>
+      prevStatuses.map(status =>
+        status.id === labelId
+          ? { ...status, userVoted: !status.userVoted }
+          : status
+      )
+    );
 
     try {
       setError(null);
-      if (isApplied) {
-        await labelAPI.removeLabelFromBoard(boardId, labelId);
-      } else {
-        await labelAPI.applyLabelToBoard(boardId, labelId);
-      }
+      const response = await labelAPI.toggleLabelVote(boardId, labelId);
       
-      await fetchBoardLabels();
-      if (onLabelChange) onLabelChange();
+      setLabelStatuses(prevStatuses => {
+        const newStatuses = prevStatuses.map(status =>
+          status.id === labelId
+            ? {
+                ...status,
+                userVoted: response.userVoted,
+                voteCount: response.status.voteCount,
+                isGloballyApplied: response.status.isGlobal,
+              }
+            : status
+        );
+        return newStatuses.sort((a, b) => b.voteCount - a.voteCount);
+      });
+
+      onLabelChange?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update board labels');
+      setLabelStatuses(originalStatuses);
+      setError(err instanceof Error ? err.message : 'Failed to vote on label');
     }
   };
 
-  const isBoardLabelApplied = (labelId: string): boolean => {
-    return boardLabels.some(bl => bl.label.id === labelId);
-  };
+
 
   if (loading) {
     return (
@@ -151,7 +176,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
       {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900">
-          {showBoardLabels ? 'Board Labels' : 'Label Management'}
+          {showBoardLabels ? 'Board Label Voting' : 'Label Management'}
         </h3>
         {isAuthenticated && !showBoardLabels && (
           <button
@@ -163,10 +188,15 @@ const LabelManager: React.FC<LabelManagerProps> = ({
         )}
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
           {error}
+        </div>
+      )}
+
+      {showBoardLabels && !isAuthenticated && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm">
+          Please log in to vote on labels for this board.
         </div>
       )}
 
@@ -176,9 +206,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
           <h4 className="font-medium text-gray-900">Create New Label</h4>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input
               type="text"
               value={newLabel.name}
@@ -189,9 +217,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Color
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
             <div className="flex space-x-2">
               {predefinedColors.map(color => (
                 <button
@@ -207,9 +233,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description (optional)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
             <input
               type="text"
               value={newLabel.description}
@@ -239,89 +263,134 @@ const LabelManager: React.FC<LabelManagerProps> = ({
 
       {/* Labels List */}
       <div className="space-y-2">
-        {labels.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-2xl mb-2">🏷️</div>
-            <p>No labels created yet</p>
-            {isAuthenticated && (
-              <p className="text-sm mt-1">Create your first label to start organizing boards</p>
-            )}
-          </div>
-        ) : (
-          labels.map((label) => (
-            <div
-              key={label.id}
-              className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
-                showBoardLabels && isBoardLabelApplied(label.id)
-                  ? 'bg-blue-50 border-blue-200'
-                  : 'bg-white border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                {showBoardLabels && boardId && isAuthenticated && (
-                  <input
-                    type="checkbox"
-                    checked={isBoardLabelApplied(label.id)}
-                    onChange={() => toggleBoardLabel(label.id)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                )}
-                
-                <div
-                  className="w-4 h-4 rounded-full border border-gray-300"
-                  style={{ backgroundColor: label.color }}
-                />
-                
-                <div>
-                  <span className="font-medium text-gray-900">{label.name}</span>
-                  {label.description && (
-                    <p className="text-sm text-gray-600 mt-1">{label.description}</p>
-                  )}
-                  {label._count && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Used in {label._count.boardLabels} board{label._count.boardLabels !== 1 ? 's' : ''}
-                    </p>
+        {showBoardLabels ? (
+          labelStatuses.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-2xl mb-2">🏷️</div>
+              <p>No labels available yet</p>
+              {isAuthenticated && (
+                <p className="text-sm mt-1">Create labels in the Label Management section</p>
+              )}
+            </div>
+          ) : (
+            labelStatuses.map((labelStatus) => (
+              <div
+                key={labelStatus.id}
+                className={`p-4 border rounded-lg transition-colors ${
+                  labelStatus.isGloballyApplied
+                    ? 'bg-green-50 border-green-200'
+                    : labelStatus.voteCount > 0
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className="w-4 h-4 rounded-full border border-gray-300"
+                      style={{ backgroundColor: labelStatus.color }}
+                    />
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-900">{labelStatus.name}</span>
+                        {labelStatus.isGloballyApplied && (
+                          <span className="text-green-600 text-sm font-medium">⭐ Global</span>
+                        )}
+                        {!labelStatus.isGloballyApplied && labelStatus.voteCount > 0 && (
+                          <span className="text-yellow-600 text-sm font-medium">📈 Trending</span>
+                        )}
+                      </div>
+                      {labelStatus.description && (
+                        <p className="text-sm text-gray-600 mt-1">{labelStatus.description}</p>
+                      )}
+                      <div className="text-xs text-gray-500 mt-1">
+                        {labelStatus.voteCount > 0 ? (
+                          `${labelStatus.voteCount} vote${labelStatus.voteCount > 1 ? 's' : ''}`
+                        ) : (
+                          'No votes yet'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isAuthenticated && (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={labelStatus.userVoted}
+                        onChange={() => handleVoteChange(labelStatus.id)}
+                        className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                        title={labelStatus.userVoted ? 'Remove your vote' : 'Vote for this label'}
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        {labelStatus.userVoted ? 'Voted' : 'Vote'}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
-
-              {!showBoardLabels && isAuthenticated && (
-                <button
-                  onClick={() => deleteLabel(label.id)}
-                  className="text-red-600 hover:text-red-700 p-1 rounded"
-                  title="Delete label"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+            ))
+          )
+        ) : (
+          labels.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-2xl mb-2">🏷️</div>
+              <p>No labels created yet</p>
+              {isAuthenticated && (
+                <p className="text-sm mt-1">Create your first label to start organizing boards</p>
               )}
             </div>
-          ))
+          ) : (
+            labels.map((label) => (
+              <div
+                key={label.id}
+                className="flex items-center justify-between p-3 border rounded-lg bg-white border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-4 h-4 rounded-full border border-gray-300"
+                    style={{ backgroundColor: label.color }}
+                  />
+                  <div>
+                    <span className="font-medium text-gray-900">{label.name}</span>
+                    {label.description && (
+                      <p className="text-sm text-gray-600 mt-1">{label.description}</p>
+                    )}
+                  </div>
+                </div>
+
+                {isAuthenticated && (
+                  <button
+                    onClick={() => deleteLabel(label.id)}
+                    className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
+                    title="Delete label"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
+            ))
+          )
         )}
       </div>
 
-      {/* Board Labels Summary */}
-      {showBoardLabels && boardLabels.length > 0 && (
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Applied Labels:</h4>
+      {/* Global Labels Summary */}
+      {showBoardLabels && labelStatuses.some(l => l.isGloballyApplied) && (
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <h4 className="font-medium text-green-900 mb-2">Globally Applied Labels:</h4>
           <div className="flex flex-wrap gap-2">
-            {boardLabels.map((boardLabel) => (
-              <span
-                key={boardLabel.id}
-                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full text-white"
-                style={{ backgroundColor: boardLabel.label.color }}
-              >
-                {boardLabel.label.name}
-              </span>
-            ))}
+            {labelStatuses
+              .filter(l => l.isGloballyApplied)
+              .map((labelStatus) => (
+                <span
+                  key={labelStatus.id}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full text-white"
+                  style={{ backgroundColor: labelStatus.color }}
+                >
+                  {labelStatus.name} ({labelStatus.voteCount})
+                </span>
+              ))}
           </div>
-        </div>
-      )}
-
-      {!isAuthenticated && (
-        <div className="text-center py-4 text-gray-500 text-sm">
-          Sign in to manage and apply labels
         </div>
       )}
     </div>

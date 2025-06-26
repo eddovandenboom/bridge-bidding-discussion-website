@@ -43,7 +43,13 @@
       "Bash(rm:*)",
       "Bash(mv:*)",
       "Bash(npm uninstall:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(kill:*)",
+      "Bash(npm run seed:*)",
+      "Bash(npm run:*)",
+      "Bash(ss:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

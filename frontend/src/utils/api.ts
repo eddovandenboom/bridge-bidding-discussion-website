@@ -219,21 +219,55 @@ export const labelAPI = {
     });
   },
 
-  applyLabelToBoard: async (boardId: string, labelId: string) => {
-    return await apiRequest(`/labels/boards/${boardId}`, {
+  // New voting-based label system
+  toggleLabelVote: async (boardId: string, labelId: string) => {
+    return await apiRequest(`/labels/boards/${boardId}/labels/${labelId}/vote`, {
       method: 'POST',
-      body: JSON.stringify({ labelId }),
     });
   },
 
-  removeLabelFromBoard: async (boardId: string, labelId: string) => {
-    return await apiRequest(`/labels/boards/${boardId}/${labelId}`, {
-      method: 'DELETE',
-    });
+  getBoardLabelStatus: async (boardId: string) => {
+    return await apiRequest(`/labels/boards/${boardId}/status`);
   },
+
+  // Legacy functions for backwards compatibility
 
   getBoardLabels: async (boardId: string) => {
     return await apiRequest(`/labels/boards/${boardId}`);
+  },
+};
+
+// Tournament management API functions (Admin only)
+export const tournamentAPI = {
+  importPBN: async (file: File) => {
+    const formData = new FormData();
+    formData.append('pbnFile', file);
+
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/tournaments/import-pbn`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  },
+
+  getStats: async () => {
+    return await apiRequest('/tournaments/stats');
+  },
+
+  deleteTournament: async (tournamentId: string) => {
+    return await apiRequest(`/tournaments/${tournamentId}`, {
+      method: 'DELETE',
+    });
   },
 };
 

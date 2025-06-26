@@ -334,7 +334,13 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
           )}
           
           {activeTab === 'labels' && (
-            <LabelManager boardId={currentBoard.id} />
+            <LabelManager 
+              boardId={currentBoard.id} 
+              showBoardLabels={true}
+              onLabelChange={() => {
+                // Optionally refresh board data
+              }}
+            />
           )}
         </div>
       </div>

@@ -60,6 +60,12 @@ npm test
 npm run build
 ```
 
+## Admin Features
+- **PBN File Import**: Admin users can upload .pbn files to import tournaments
+- **Tournament Management**: View statistics and delete tournaments
+- **Access**: Admin panel accessible via "Admin" navigation button (admin users only)
+- **File Upload**: Supports .pbn files up to 5MB with validation
+
 ## Bridge-Specific Notes
 - Support standard PBN format for broad compatibility
 - Hand display should support all 4 perspectives (N/S/E/W)
@@ -75,6 +81,19 @@ npm run build
 - Responsive design for mobile bridge players
 
 ## Common Issues & Solutions
+
+### Slow npm run dev Performance
+**Problem:** `npm run dev` takes a long time to start or has dependency issues
+**Cause:** Outdated or conflicting npm dependencies, especially in workspace environments
+**Solution:** Run `npm install` to fix dependency issues before starting dev server
+```bash
+# Fix dependencies first
+npm install
+
+# Then start development
+npm run dev
+```
+**Prevention:** Regularly update dependencies and run `npm install` after pulling changes
 
 ### TypeScript Interface Import Error
 **Problem:** `Uncaught SyntaxError: The requested module doesn't provide an export named: 'InterfaceName'`

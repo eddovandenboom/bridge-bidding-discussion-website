@@ -3,12 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './AuthModal';
 import TournamentSelector from './TournamentSelector';
 import TournamentViewer from './TournamentViewer';
+import AdminPanel from './AdminPanel';
 
 const MainApp: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'tournaments' | 'tournament-view'>('tournaments');
+  const [currentView, setCurrentView] = useState<'tournaments' | 'tournament-view' | 'admin'>('tournaments');
 
   const handleAuthClick = () => {
     if (isAuthenticated) {
@@ -38,6 +39,10 @@ const MainApp: React.FC = () => {
     setCurrentView('tournaments');
   };
 
+  const handleAdminClick = () => {
+    setCurrentView('admin');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -62,6 +67,16 @@ const MainApp: React.FC = () => {
               >
                 Home
               </button>
+              {user?.role === 'ADMIN' && (
+                <button 
+                  onClick={handleAdminClick}
+                  className={`font-medium transition-colors ${
+                    currentView === 'admin' ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
+                  }`}
+                >
+                  Admin
+                </button>
+              )}
             </nav>
 
             {/* User Menu */}
@@ -98,6 +113,10 @@ const MainApp: React.FC = () => {
             tournamentId={selectedTournamentId}
             onBack={handleBackToTournaments}
           />
+        )}
+
+        {currentView === 'admin' && (
+          <AdminPanel />
         )}
       </main>
 
