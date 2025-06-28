@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import BridgeHandSimple, { parsePBNHand } from './BridgeHandSimple';
+import BridgeWebsHandViewer from './BridgeWebsHandViewer';
 import Comments from './Comments';
 import PollCreator from './PollCreator';
 import BoardPollList from './BoardPollList';
@@ -12,6 +12,7 @@ interface Tournament {
   date: string;
   venue?: string;
   boards: Board[];
+  pbnFileUrl?: string;
 }
 
 interface Board {
@@ -39,10 +40,10 @@ interface TournamentViewerProps {
   onBack: () => void;
 }
 
-const TournamentViewer: React.FC<TournamentViewerProps> = ({ 
-  tournamentId, 
+const TournamentViewer: React.FC<TournamentViewerProps> = ({
+  tournamentId,
   initialBoardNumber = 1,
-  onBack 
+  onBack
 }) => {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [currentBoardIndex, setCurrentBoardIndex] = useState(0);
@@ -77,19 +78,31 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
     }
   };
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'boardChange' && data.boardNumber) {
+          if (tournament) {
+            const newBoardIndex = tournament.boards.findIndex(b => b.boardNumber.toString() === data.boardNumber.toString());
+            if (newBoardIndex !== -1) {
+              setCurrentBoardIndex(newBoardIndex);
+            }
+          }
+        }
+      } catch (error) {
+        // Not a json message, ignore
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [tournament]);
+
   const currentBoard = tournament?.boards[currentBoardIndex];
-
-  const goToPreviousBoard = () => {
-    if (currentBoardIndex > 0) {
-      setCurrentBoardIndex(currentBoardIndex - 1);
-    }
-  };
-
-  const goToNextBoard = () => {
-    if (tournament && currentBoardIndex < tournament.boards.length - 1) {
-      setCurrentBoardIndex(currentBoardIndex + 1);
-    }
-  };
 
 
 
@@ -153,7 +166,7 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       {/* Header with navigation */}
       <div className="mb-6">
         <button
@@ -173,37 +186,12 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
             {tournament.venue && <p className="text-gray-500">📍 {tournament.venue}</p>}
           </div>
           
-          {/* Board navigation */}
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={goToPreviousBoard}
-              disabled={currentBoardIndex === 0}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Previous board"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <div className="text-center">
+          <div className="text-center">
               <div className="text-xl font-bold">Board {currentBoard.boardNumber}</div>
               <div className="text-sm text-gray-500">
                 {currentBoardIndex + 1} of {tournament.boards.length}
               </div>
             </div>
-            
-            <button
-              onClick={goToNextBoard}
-              disabled={currentBoardIndex === tournament.boards.length - 1}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Next board"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -211,9 +199,9 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left column: Board display */}
-        <div className="lg:col-span-7">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="mb-4 text-center">
+        <div className="lg:col-span-6">
+          <div>
+            <div className="mb-4 text-center p-6">
               {/* Labels */}
               {currentBoard.labels && currentBoard.labels.length > 0 && (
                 <div className="flex justify-center flex-wrap gap-2 mt-3">
@@ -230,60 +218,26 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
               )}
             </div>
 
-            {/* Bridge Table Layout */}
-            <div className="bg-green-800 rounded-lg p-12 relative min-h-[600px]">
-              <div className="relative min-h-[500px] flex items-center justify-center">
-                {/* North */}
-                <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
-                  <BridgeHandSimple
-                    hand={parsePBNHand(currentBoard.northHand)}
-                    position="north"
-                    isDealer={currentBoard.dealer === 'NORTH'}
-                  />
-                </div>
-
-                {/* West */}
-                <div className="absolute left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <BridgeHandSimple
-                    hand={parsePBNHand(currentBoard.westHand)}
-                    position="west"
-                    isDealer={currentBoard.dealer === 'WEST'}
-                  />
-                </div>
-
-                {/* East */}
-                <div className="absolute right-1/4 top-1/2 transform translate-x-1/2 -translate-y-1/2">
-                  <BridgeHandSimple
-                    hand={parsePBNHand(currentBoard.eastHand)}
-                    position="east"
-                    isDealer={currentBoard.dealer === 'EAST'}
-                  />
-                </div>
-
-                {/* South */}
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-                  <BridgeHandSimple
-                    hand={parsePBNHand(currentBoard.southHand)}
-                    position="south"
-                    isDealer={currentBoard.dealer === 'SOUTH'}
-                  />
-                </div>
-
-                {/* Center */}
-                <div className="h-20 w-32 bg-green-900 rounded-lg border-2 border-green-700 flex items-center justify-center shadow-lg">
-                  <div className="text-white text-sm font-semibold text-center">
-                    <div>Board {currentBoard.boardNumber}</div>
-                    <div className="text-xs mt-1">Vul: {currentBoard.vulnerability}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* BridgeWebs Hand Viewer */}
+            {tournament.pbnFileUrl && (() => {
+              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+              const baseUrl = apiUrl.replace('/api', '');
+              const pbnUrl = `${baseUrl}${tournament.pbnFileUrl}`;
+              
+              return (
+                <BridgeWebsHandViewer
+                  pbnFileUrl={`/bsol/bsol_v1.08/ddummy.htm?file=${encodeURIComponent(
+                    pbnUrl
+                  )}`}
+                />
+              );
+            })()}
           </div>
         </div>
 
         {/* Right column: Tab navigation and content */}
-        <div className="lg:col-span-5">
-          <div className="bg-white rounded-lg shadow-md sticky top-8">
+        <div className="lg:col-span-6">
+          <div className="bg-white rounded-lg shadow-md sticky top-8 overflow-hidden">
             {/* Tab headers */}
             <div className="border-b border-gray-200">
               <nav className="flex justify-around">
@@ -311,7 +265,7 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
             </div>
 
             {/* Tab content */}
-            <div className="p-6">
+            <div className="p-6" style={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
               {activeTab === 'comments' && (
                 <Comments boardId={currentBoard.id} />
               )}

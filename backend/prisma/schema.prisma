@@ -30,7 +30,7 @@ model Tournament {
   name        String
   date        DateTime
   venue       String?
-  pbnUrl      String?
+  pbnFileUrl  String?
   source      String   @default("1011.bridge.nl")
   isProcessed Boolean  @default(false)
   createdAt   DateTime @default(now())

@@ -47,7 +47,7 @@ const MainApp: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className={`mx-auto px-4 sm:px-6 lg:px-8 ${currentView === 'tournament-view' ? 'max-w-7xl' : 'max-w-6xl'}`}>
+        <div className={`mx-auto px-4 sm:px-6 lg:px-8 ${currentView === 'tournament-view' ? '' : 'max-w-6xl'}`}>
           <div className="flex justify-between items-center h-16">
             {/* Logo/Title */}
             <div className="flex items-center space-x-3">
@@ -103,7 +103,7 @@ const MainApp: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${currentView === 'tournament-view' ? 'max-w-7xl' : 'max-w-6xl'}`}>
+      <main className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${currentView === 'tournament-view' ? '' : 'max-w-6xl'}`}>
         {currentView === 'tournaments' && (
           <TournamentSelector onTournamentSelect={handleTournamentSelect} />
         )}
@@ -122,7 +122,7 @@ const MainApp: React.FC = () => {
 
       {/* Footer */}
       <footer className="bg-white border-t mt-12">
-        <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-6 ${currentView === 'tournament-view' ? 'max-w-7xl' : 'max-w-6xl'}`}>
+        <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-6 ${currentView === 'tournament-view' ? '' : 'max-w-6xl'}`}>
           <div className="text-center text-sm text-gray-500">
             <p>Bridge Bidding Discussion Platform</p>
             <p className="mt-1">

@@ -135,28 +135,67 @@ function parseDealString(dealString: string): {
   eastHand: string;
   westHand: string;
 } {
-  // Deal format: "N:NSSS.HHHS.DDDS.CCCS EEEE.HHHH.DDDD.CCCC ..."
-  const parts = dealString.split(' ');
-  const hands = parts[0].split(':')[1]; // Remove the "N:" prefix
+  if (!dealString || !dealString.includes(':')) {
+    throw new Error(`Invalid deal string: ${dealString}`);
+  }
   
-  const [north, east, south, west] = [hands, ...parts.slice(1)];
+  const [firstSeatChar, dealData] = dealString.split(':', 2);
+  const allHands = dealData.split(' ');
+
+  if (allHands.length < 4) {
+    throw new Error(`Invalid number of hands in deal string: ${dealString}`);
+  }
+
+  const handMap: { [key: string]: string } = {};
+  const seatOrder: Seat[] = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
   
+  let firstSeatIndex = -1;
+  switch (firstSeatChar) {
+    case 'N': firstSeatIndex = 0; break;
+    case 'E': firstSeatIndex = 1; break;
+    case 'S': firstSeatIndex = 2; break;
+    case 'W': firstSeatIndex = 3; break;
+    default: throw new Error(`Invalid starting seat in deal string: ${firstSeatChar}`);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const currentSeat = seatOrder[(firstSeatIndex + i) % 4];
+    handMap[currentSeat] = allHands[i];
+  }
+
   return {
-    northHand: north,
-    southHand: south,
-    eastHand: east,
-    westHand: west
+    northHand: handMap['NORTH'] || '',
+    southHand: handMap['SOUTH'] || '',
+    eastHand: handMap['EAST'] || '',
+    westHand: handMap['WEST'] || ''
   };
 }
 
 function convertDateFormat(pbnDate: string): Date {
-  // Convert "2025.6.17" to proper date
-  const parts = pbnDate.split('.');
+  if (!pbnDate) {
+    throw new Error('PBN date is missing');
+  }
+  // Replace dots with dashes for consistency and handle different formats
+  const formattedDate = pbnDate.replace(/\./g, '-');
+  const parts = formattedDate.split('-');
+  
+  if (parts.length !== 3) {
+    throw new Error(`Invalid date format: ${pbnDate}`);
+  }
+
   const year = parseInt(parts[0]);
   const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
   const day = parseInt(parts[2]);
+
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    throw new Error(`Invalid date components in: ${pbnDate}`);
+  }
   
-  return new Date(year, month, day);
+  const date = new Date(Date.UTC(year, month, day));
+  if (isNaN(date.getTime())) {
+      throw new Error(`Could not create a valid date from: ${pbnDate}`);
+  }
+  return date;
 }
 
 // Upload and import PBN file (Admin only)
@@ -170,22 +209,33 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
 
     console.log(`Admin ${req.user?.username} uploading PBN file: ${req.file.originalname}`);
 
-    // Read the uploaded file
-    const fileContent = fs.readFileSync(req.file.path, 'utf-8');
-    console.log('--- PBN File Content ---');
-    console.log(fileContent);
-    console.log('------------------------');
+    // Define a public path for the PBN file within the backend's public directory
+    const publicDir = path.join(__dirname, '../../public/tournaments');
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+    
+    const pbnFileName = `${Date.now()}-${req.file.originalname}`;
+    const pbnFilePath = path.join(publicDir, pbnFileName);
+    // The URL should be relative to the backend's public serving path
+    const pbnFileUrl = `/public/tournaments/${pbnFileName}`;
+
+    // Move the file from temp to public.
+    // fs.renameSync can cause EXDEV errors in Docker when /tmp and the app directory are on different devices.
+    // A safer way is to copy the file and then delete the source.
+    fs.copyFileSync(req.file.path, pbnFilePath);
+    fs.unlinkSync(req.file.path);
+    console.log(`PBN file saved to: ${pbnFilePath}`);
+
+    // Read the PBN file content
+    const fileContent = fs.readFileSync(pbnFilePath, 'utf-8');
     
     // Parse the PBN content
     const tournamentData = parsePBNContent(fileContent);
-    console.log('--- Parsed Tournament Data ---');
-    console.log(JSON.stringify(tournamentData, null, 2));
-    console.log('----------------------------');
     
-    if (!tournamentData.event || !tournamentData.boards || tournamentData.boards.length === 0) {
-      // Clean up uploaded file
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: 'Invalid PBN file: missing event name or boards' });
+    if (!tournamentData.event || !tournamentData.date || !tournamentData.boards || tournamentData.boards.length === 0) {
+      fs.unlinkSync(pbnFilePath); // Clean up saved file
+      return res.status(400).json({ error: 'Invalid PBN file: missing event name, date, or boards' });
     }
 
     console.log(`Parsed tournament: ${tournamentData.event}`);
@@ -200,9 +250,8 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
     });
 
     if (existingTournament) {
-      // Clean up uploaded file
-      fs.unlinkSync(req.file.path);
-      return res.status(409).json({ 
+      fs.unlinkSync(pbnFilePath); // Clean up saved file
+      return res.status(409).json({
         error: 'Tournament with this name and date already exists',
         existingTournament: {
           id: existingTournament.id,
@@ -219,7 +268,8 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
         venue: tournamentData.site || 'Unknown Venue',
         date: convertDateFormat(tournamentData.date),
         source: 'PBN Upload',
-        isProcessed: true
+        isProcessed: true,
+        pbnFileUrl: pbnFileUrl
       }
     });
     
@@ -229,6 +279,10 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
     const createdBoards = [];
     for (const boardData of tournamentData.boards) {
       try {
+        if (!boardData.deal || !boardData.dealer || !boardData.vulnerability) {
+          console.error(`Skipping board ${boardData.boardNumber} due to incomplete data in PBN file.`);
+          continue;
+        }
         const hands = parseDealString(boardData.deal);
         
         const board = await prisma.board.create({
@@ -252,9 +306,6 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
       }
     }
     
-    // Clean up uploaded file
-    fs.unlinkSync(req.file.path);
-    
     console.log('PBN import completed successfully!');
     
     res.status(201).json({
@@ -264,6 +315,7 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
         name: tournament.name,
         venue: tournament.venue,
         date: tournament.date,
+        pbnFileUrl: tournament.pbnFileUrl,
         boardsCreated: createdBoards.length,
         totalBoards: tournamentData.boards.length
       }
@@ -367,6 +419,39 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Get a single tournament by ID
+router.get('/:tournamentId', async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: {
+        boards: {
+          orderBy: {
+            boardNumber: 'asc'
+          },
+          include: {
+            labelStatuses: {
+              include: {
+                label: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' });
+    }
+
+    res.json({ tournament });
+  } catch (error) {
+    console.error(`Error fetching tournament ${req.params.tournamentId}:`, error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Delete tournament (Admin only)
 router.delete('/:tournamentId', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -403,6 +488,46 @@ router.delete('/:tournamentId', authenticateToken, requireAdmin, async (req, res
   } catch (error) {
     console.error('Error deleting tournament:', error);
     res.status(500).json({ error: 'Failed to delete tournament' });
+  }
+});
+
+// Get a tournament as a PBN file
+router.get('/:tournamentId/pbn', async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: {
+        boards: {
+          orderBy: {
+            boardNumber: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' });
+    }
+
+    let pbnContent = '';
+    pbnContent += `[Event "${tournament.name}"]\n`;
+    pbnContent += `[Site "${tournament.venue}"]\n`;
+    pbnContent += `[Date "${tournament.date.toISOString().slice(0, 10).replace(/-/g, '.')}"]\n\n`;
+
+    for (const board of tournament.boards) {
+      pbnContent += `[Board "${board.boardNumber}"]\n`;
+      pbnContent += `[Dealer "${board.dealer.charAt(0)}"]\n`;
+      pbnContent += `[Vulnerable "${board.vulnerability}"]\n`;
+      const deal = `N:${board.northHand} ${board.eastHand} ${board.southHand} ${board.westHand}`;
+      pbnContent += `[Deal "${deal}"]\n\n`;
+    }
+
+    res.header('Content-Type', 'application/x-pbn');
+    res.send(pbnContent);
+  } catch (error) {
+    console.error('Error generating PBN file:', error);
+    res.status(500).json({ error: 'Failed to generate PBN file' });
   }
 });
 
