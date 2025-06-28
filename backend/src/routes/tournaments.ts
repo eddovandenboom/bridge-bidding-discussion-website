@@ -295,15 +295,17 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
 router.get('/', async (req, res) => {
   try {
     const tournaments = await prisma.tournament.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        date: true,
+        venue: true,
         boards: {
-          orderBy: { boardNumber: 'asc' },
-          include: {
-            labelStatuses: {
-              include: {
-                label: true
-              }
-            }
+          select: {
+            id: true
+          },
+          orderBy: {
+            boardNumber: 'asc'
           }
         }
       },

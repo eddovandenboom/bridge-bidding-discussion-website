@@ -279,8 +279,6 @@ const LabelManager: React.FC<LabelManagerProps> = ({
                 className={`p-4 border rounded-lg transition-colors ${
                   labelStatus.isGloballyApplied
                     ? 'bg-green-50 border-green-200'
-                    : labelStatus.voteCount > 0
-                    ? 'bg-yellow-50 border-yellow-200'
                     : 'bg-white border-gray-200'
                 }`}
               >
@@ -295,9 +293,6 @@ const LabelManager: React.FC<LabelManagerProps> = ({
                         <span className="font-medium text-gray-900">{labelStatus.name}</span>
                         {labelStatus.isGloballyApplied && (
                           <span className="text-green-600 text-sm font-medium">⭐ Global</span>
-                        )}
-                        {!labelStatus.isGloballyApplied && labelStatus.voteCount > 0 && (
-                          <span className="text-yellow-600 text-sm font-medium">📈 Trending</span>
                         )}
                       </div>
                       {labelStatus.description && (

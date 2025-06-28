@@ -153,7 +153,7 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Header with navigation */}
       <div className="mb-6">
         <button
@@ -207,141 +207,147 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
         </div>
       </div>
 
-      {/* Board display - always visible */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="mb-4 text-center">
-          <h2 className="text-xl font-bold mb-2">Board {currentBoard.boardNumber}</h2>
-          
-          {/* Labels */}
-          {currentBoard.labels && currentBoard.labels.length > 0 && (
-            <div className="flex justify-center flex-wrap gap-2 mt-3">
-              {currentBoard.labels.map((boardLabel) => (
-                <span
-                  key={boardLabel.id}
-                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full text-white"
-                  style={{ backgroundColor: boardLabel.label.color }}
-                >
-                  {boardLabel.label.name}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Bridge Table Layout */}
-        <div className="bg-green-800 rounded-lg p-12 relative min-h-[600px]">
-          <div className="relative min-h-[500px] flex items-center justify-center">
-            {/* North */}
-            <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
-              <BridgeHandSimple 
-                hand={parsePBNHand(currentBoard.northHand)} 
-                position="north"
-                isDealer={currentBoard.dealer === 'NORTH'}
-              />
+      {/* Main content area with side-by-side layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Left column: Board display */}
+        <div className="lg:col-span-7">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="mb-4 text-center">
+              {/* Labels */}
+              {currentBoard.labels && currentBoard.labels.length > 0 && (
+                <div className="flex justify-center flex-wrap gap-2 mt-3">
+                  {currentBoard.labels.map((boardLabel) => (
+                    <span
+                      key={boardLabel.id}
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full text-white"
+                      style={{ backgroundColor: boardLabel.label.color }}
+                    >
+                      {boardLabel.label.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* West */}
-            <div className="absolute left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <BridgeHandSimple 
-                hand={parsePBNHand(currentBoard.westHand)} 
-                position="west"
-                isDealer={currentBoard.dealer === 'WEST'}
-              />
-            </div>
+            {/* Bridge Table Layout */}
+            <div className="bg-green-800 rounded-lg p-12 relative min-h-[600px]">
+              <div className="relative min-h-[500px] flex items-center justify-center">
+                {/* North */}
+                <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
+                  <BridgeHandSimple
+                    hand={parsePBNHand(currentBoard.northHand)}
+                    position="north"
+                    isDealer={currentBoard.dealer === 'NORTH'}
+                  />
+                </div>
 
-            {/* East */}
-            <div className="absolute right-1/4 top-1/2 transform translate-x-1/2 -translate-y-1/2">
-              <BridgeHandSimple 
-                hand={parsePBNHand(currentBoard.eastHand)} 
-                position="east"
-                isDealer={currentBoard.dealer === 'EAST'}
-              />
-            </div>
+                {/* West */}
+                <div className="absolute left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <BridgeHandSimple
+                    hand={parsePBNHand(currentBoard.westHand)}
+                    position="west"
+                    isDealer={currentBoard.dealer === 'WEST'}
+                  />
+                </div>
 
-            {/* South */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-              <BridgeHandSimple 
-                hand={parsePBNHand(currentBoard.southHand)} 
-                position="south"
-                isDealer={currentBoard.dealer === 'SOUTH'}
-              />
-            </div>
+                {/* East */}
+                <div className="absolute right-1/4 top-1/2 transform translate-x-1/2 -translate-y-1/2">
+                  <BridgeHandSimple
+                    hand={parsePBNHand(currentBoard.eastHand)}
+                    position="east"
+                    isDealer={currentBoard.dealer === 'EAST'}
+                  />
+                </div>
 
-            {/* Center */}
-            <div className="h-20 w-32 bg-green-900 rounded-lg border-2 border-green-700 flex items-center justify-center shadow-lg">
-              <div className="text-white text-sm font-semibold text-center">
-                <div>Board {currentBoard.boardNumber}</div>
-                <div className="text-xs mt-1">Vul: {currentBoard.vulnerability}</div>
+                {/* South */}
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                  <BridgeHandSimple
+                    hand={parsePBNHand(currentBoard.southHand)}
+                    position="south"
+                    isDealer={currentBoard.dealer === 'SOUTH'}
+                  />
+                </div>
+
+                {/* Center */}
+                <div className="h-20 w-32 bg-green-900 rounded-lg border-2 border-green-700 flex items-center justify-center shadow-lg">
+                  <div className="text-white text-sm font-semibold text-center">
+                    <div>Board {currentBoard.boardNumber}</div>
+                    <div className="text-xs mt-1">Vul: {currentBoard.vulnerability}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Tab navigation and content */}
-      <div className="bg-white rounded-lg shadow-md">
-        {/* Tab headers */}
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
-            {[
-              { id: 'comments', label: 'Comments', icon: '💬' },
-              { id: 'polls', label: 'Polls', icon: '📊' },
-              { id: 'create-poll', label: 'Create Poll', icon: '➕' },
-              { id: 'bidding', label: 'Bidding', icon: '🃏' },
-              { id: 'labels', label: 'Labels', icon: '🏷️' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+        {/* Right column: Tab navigation and content */}
+        <div className="lg:col-span-5">
+          <div className="bg-white rounded-lg shadow-md sticky top-8">
+            {/* Tab headers */}
+            <div className="border-b border-gray-200">
+              <nav className="flex justify-around">
+                {[
+                  { id: 'comments', label: 'Comments', icon: '💬' },
+                  { id: 'polls', label: 'Polls', icon: '📊' },
+                  { id: 'create-poll', label: 'Create Poll', icon: '➕' },
+                  { id: 'bidding', label: 'Bidding', icon: '🃏' },
+                  { id: 'labels', label: 'Labels', icon: '🏷️' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="mr-2">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
 
-        {/* Tab content */}
-        <div className="p-6">
-          {activeTab === 'comments' && (
-            <Comments boardId={currentBoard.id} />
-          )}
-          
-          {activeTab === 'polls' && (
-            <BoardPollList boardId={currentBoard.id} />
-          )}
-          
-          {activeTab === 'create-poll' && (
-            <PollCreator 
-              boardId={currentBoard.id}
-              onPollCreated={() => setActiveTab('polls')}
-              onClose={() => setActiveTab('polls')}
-            />
-          )}
-          
-          {activeTab === 'bidding' && (
-            <BiddingEntry 
-              boardId={currentBoard.id}
-              boardNumber={currentBoard.boardNumber}
-              dealer={currentBoard.dealer as 'NORTH' | 'SOUTH' | 'EAST' | 'WEST'}
-              onClose={() => {}}
-            />
-          )}
-          
-          {activeTab === 'labels' && (
-            <LabelManager 
-              boardId={currentBoard.id} 
-              showBoardLabels={true}
-              onLabelChange={() => {
-                // Optionally refresh board data
-              }}
-            />
-          )}
+            {/* Tab content */}
+            <div className="p-6">
+              {activeTab === 'comments' && (
+                <Comments boardId={currentBoard.id} />
+              )}
+              
+              {activeTab === 'polls' && (
+                <BoardPollList boardId={currentBoard.id} />
+              )}
+              
+              {activeTab === 'create-poll' && (
+                <PollCreator
+                  boardId={currentBoard.id}
+                  onPollCreated={() => setActiveTab('polls')}
+                  onClose={() => setActiveTab('polls')}
+                />
+              )}
+              
+              {activeTab === 'bidding' && (
+                <BiddingEntry
+                  boardId={currentBoard.id}
+                  boardNumber={currentBoard.boardNumber}
+                  dealer={currentBoard.dealer as 'NORTH' | 'SOUTH' | 'EAST' | 'WEST'}
+                  onClose={() => {}}
+                />
+              )}
+              
+              {activeTab === 'labels' && (
+                <LabelManager
+                  boardId={currentBoard.id}
+                  showBoardLabels={true}
+                  onLabelChange={() => {
+                    // Optionally refresh board data
+                  }}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

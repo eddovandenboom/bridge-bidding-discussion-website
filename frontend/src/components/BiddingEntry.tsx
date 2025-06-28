@@ -189,8 +189,12 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
     setBids(prev => {
       const newBids = prev.slice(0, index);
       // Update current seat based on remaining bids
-      const lastBidSeat = newBids.length > 0 ? newBids[newBids.length - 1].seat : dealer;
-      setCurrentSeat(getNextSeat(lastBidSeat));
+      if (newBids.length > 0) {
+        const lastBidSeat = newBids[newBids.length - 1].seat;
+        setCurrentSeat(getNextSeat(lastBidSeat));
+      } else {
+        setCurrentSeat(dealer);
+      }
       return newBids;
     });
   };
@@ -392,12 +396,6 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
       <div className="bg-white rounded-lg border border-gray-300 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-lg font-semibold">Current Bidding Sequence</h4>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Next to bid:</span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${getSeatColor(currentSeat)}`}>
-              {currentSeat}
-            </span>
-          </div>
         </div>
 
         {/* Bidding Table Grid */}
@@ -429,39 +427,23 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
                   className="p-2 text-center border border-gray-200 rounded min-h-[40px] flex items-center justify-center relative"
                 >
                   {bid ? (
-                    <div className="group relative w-full">
-                      <div className="flex flex-col items-center space-y-1">
-                        <div className="flex items-center space-x-1">
-                          {formatBidWithColor(bid)}
-                          {bid.isAlert && (
-                            <span className="text-red-600 text-xs">*</span>
-                          )}
-                        </div>
-                        
-                        {/* Always visible small buttons */}
-                        <div className="flex space-x-1 opacity-70 hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleAlert(bidIndex);
-                            }}
-                            className="px-1 py-0.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
-                            title="Add/Edit Alert"
-                          >
-                            !
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeBid(bidIndex);
-                            }}
-                            className="px-1 py-0.5 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
-                            title="Remove this bid and all after"
-                          >
-                            ×
-                          </button>
-                        </div>
+                    <div className="flex items-center justify-between w-full px-2">
+                      <div className="flex-grow text-center">
+                        {formatBidWithColor(bid)}
+                        {bid.isAlert && (
+                          <span className="text-red-600 text-xs ml-1">*</span>
+                        )}
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleAlert(bidIndex);
+                        }}
+                        className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200 transition-colors"
+                        title="Add/Edit Alert"
+                      >
+                        !
+                      </button>
                     </div>
                   ) : null}
                 </div>
@@ -529,18 +511,36 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
               </div>
             </div>
 
-            {/* Save Button */}
+            {/* Action Buttons */}
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="text-sm text-gray-600">
                 {bids.length} bid{bids.length !== 1 ? 's' : ''} entered
               </div>
-              <button
-                onClick={saveBiddingSequence}
-                disabled={saving || bids.length === 0}
-                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
-              >
-                {saving ? 'Saving...' : 'Save Bidding Sequence'}
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => removeBid(bids.length - 1)}
+                  disabled={bids.length === 0}
+                  className="px-4 py-2 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50 transition-colors"
+                  title="Remove the last bid from the sequence"
+                >
+                  Delete Last
+                </button>
+                <button
+                  onClick={() => removeBid(0)}
+                  disabled={bids.length === 0}
+                  className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  title="Clear the entire bidding sequence"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={saveBiddingSequence}
+                  disabled={saving || bids.length === 0}
+                  className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                >
+                  {saving ? 'Saving...' : 'Save Bidding Sequence'}
+                </button>
+              </div>
             </div>
           </div>
         )}
