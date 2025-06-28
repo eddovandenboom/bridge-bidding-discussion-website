@@ -1,5 +1,5 @@
 // API utilities for frontend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Get auth token from localStorage
 const getAuthToken = (): string | null => {
@@ -159,6 +159,10 @@ export const pollAPI = {
     return await apiRequest(`/polls/${pollId}/close`, {
       method: 'PATCH',
     });
+  },
+
+  getBoardPolls: async (boardId: string) => {
+    return await apiRequest(`/boards/${boardId}/polls`);
   },
 };
 

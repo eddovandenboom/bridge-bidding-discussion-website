@@ -5,6 +5,7 @@ import PollCreator from './PollCreator';
 import BoardPollList from './BoardPollList';
 import BiddingEntry from './BiddingEntry';
 import LabelManager from './LabelManager';
+import { boardAPI, API_BASE_URL } from '../utils/api';
 
 interface Tournament {
   id: string;
@@ -65,11 +66,7 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
   const fetchTournament = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/tournaments/${tournamentId}`);
-      if (!response.ok) {
-        throw new Error('Tournament not found');
-      }
-      const data = await response.json();
+      const data = await boardAPI.getTournament(tournamentId);
       setTournament(data.tournament);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tournament');
@@ -220,8 +217,7 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
 
             {/* BridgeWebs Hand Viewer */}
             {tournament.pbnFileUrl && (() => {
-              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-              const baseUrl = apiUrl.replace('/api', '');
+              const baseUrl = API_BASE_URL.replace('/api', '');
               const pbnUrl = `${baseUrl}${tournament.pbnFileUrl}`;
               
               return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import PollDisplay from './PollDisplay';
+import { pollAPI } from '../utils/api';
 
 interface PollOption {
   id: string;
@@ -50,12 +51,7 @@ const BoardPollList: React.FC<BoardPollListProps> = ({ boardId }) => {
       setError(null);
       
       // Fetch polls for this board
-      const response = await fetch(`http://localhost:3001/api/boards/${boardId}/polls`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch polls');
-      }
-      
-      const data = await response.json();
+      const data = await pollAPI.getBoardPolls(boardId);
       setPolls(data.polls || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load polls');
