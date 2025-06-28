@@ -36,7 +36,10 @@ services:
     networks:
       - bridge_network
     command: >
-      sh -c "echo '--- Backend starting with FRONTEND_URL=$FRONTEND_URL ---' && npm run dev"
+      sh -c "echo '--- Deploying database migrations ---' &&
+             npm run db:deploy &&
+             echo '--- Starting backend server ---' &&
+             npm run dev"
 
   # Frontend (Development)
   frontend:
