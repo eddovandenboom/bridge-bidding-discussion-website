@@ -7,7 +7,8 @@ bridgetalk.app {
         reverse_proxy backend:3001
     }
 
-   handle /db-ui/* {
+   handle_path /db-ui/* {
+       rewrite * {path}
        reverse_proxy db-ui:5555
    }
 
