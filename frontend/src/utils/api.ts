@@ -37,7 +37,9 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log(`Requesting API URL: ${fullUrl}`);
+    const response = await fetch(fullUrl, config);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
