@@ -8,7 +8,7 @@ bridgetalk.app {
     }
 
    handle_path /db-ui/* {
-       rewrite * {path}
+       uri strip_prefix /db-ui
        reverse_proxy db-ui:5555
    }
 
@@ -19,3 +19,4 @@ bridgetalk.app {
         }
     }
 }
+
