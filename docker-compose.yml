@@ -23,7 +23,6 @@ services:
     env_file:
       - ./.env
     environment:
-      - NODE_ENV=development
       - DATABASE_URL=postgresql://bridge_user:bridge_password@db:5432/bridge_discussion
       - PORT=3001
     ports:
@@ -36,12 +35,14 @@ services:
     networks:
       - bridge_network
     command: >
-      sh -c "echo '--- Deploying database migrations ---' &&
+      sh -c "echo '--- Building application ---' &&
+             npm run build &&
+             echo '--- Deploying database migrations ---' &&
              npm run db:deploy &&
              echo '--- Seeding database ---' &&
              npm run db:seed &&
              echo '--- Starting backend server ---' &&
-             npm run dev"
+             npm run start"
 
   # Frontend (Development)
   frontend:
