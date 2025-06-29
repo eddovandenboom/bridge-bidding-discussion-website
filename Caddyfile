@@ -1,8 +1,17 @@
 bridgetalk.app {
-    reverse_proxy /api/* backend:3001
-    reverse_proxy /public/* backend:3001
-    reverse_proxy /tournaments/* backend:3001
-    reverse_proxy frontend:5173 {
-        header_up Host {host}
+    handle /api/* {
+        reverse_proxy backend:3001
+    }
+
+    handle /public/* {
+        # rewrite * /public{path}
+        reverse_proxy backend:3001
+    }
+
+    # Fallback for the frontend application
+    handle {
+        reverse_proxy frontend:5173 {
+            header_up Host {host}
+        }
     }
 }
