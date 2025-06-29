@@ -218,7 +218,7 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
     const pbnFileName = `${Date.now()}-${req.file.originalname}`;
     const pbnFilePath = path.join(publicDir, pbnFileName);
     // The URL should be relative to the backend's public serving path
-    const pbnFileUrl = `/public/tournaments/${pbnFileName}`;
+    const pbnFileUrl = `/tournaments/${pbnFileName}`;
 
     // Move the file from temp to public.
     // fs.renameSync can cause EXDEV errors in Docker when /tmp and the app directory are on different devices.

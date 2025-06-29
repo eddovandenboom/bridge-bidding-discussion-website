@@ -3,8 +3,8 @@ bridgetalk.app {
         reverse_proxy backend:3001
     }
 
-    handle /public/* {
-        # rewrite * /public{path}
+    handle /tournaments/* {
+        rewrite * /public{path}
         reverse_proxy backend:3001
     }
 
