@@ -23,7 +23,7 @@ async function main() {
   });
 
   // Create test user
-  const userPassword = await bcrypt.hash('user123', 10);
+  const userPassword = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD || 'user123', 10);
   const testUser = await prisma.user.upsert({
     where: { email: 'user@bridge.local' },
     update: {},
@@ -58,7 +58,7 @@ async function main() {
 
   console.log('✅ Database seeded successfully!');
   console.log(`👤 Admin user: admin@bridge.local / (password from env)`);
-  console.log(`👤 Test user: user@bridge.local / user123`);
+  console.log(`👤 Test user: user@bridge.local / (password from env)`);
 }
 
 main()
