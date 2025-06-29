@@ -52,16 +52,10 @@ services:
     container_name: bridge_frontend
     env_file:
       - ./.env
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - bridge_network
-    command: >
-      sh -c "echo '--- Building frontend ---' &&
-             npm run build &&
-             echo '--- Serving frontend ---' &&
-             npm run preview"
+    depends_on:
+      - backend # Ensure backend is ready for API calls during frontend build
 
   # Caddy Reverse Proxy
   caddy:
