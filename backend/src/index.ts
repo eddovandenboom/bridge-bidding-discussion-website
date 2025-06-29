@@ -91,9 +91,7 @@ function startNewInstance() {
   });
 }
 
-if (process.env.NODE_ENV !== 'production') {
-  startServer();
-}
+startServer();
 
 // Export for Vercel
 export default app;
