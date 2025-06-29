@@ -13,6 +13,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api')
       }
-    }
+    },
+    allowedHosts: ['bridgetalk.app'] // Allow requests from the deployed domain
   }
 })
