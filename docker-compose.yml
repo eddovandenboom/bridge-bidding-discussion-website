@@ -35,7 +35,9 @@ services:
     networks:
       - bridge_network
     command: >
-      sh -c "echo '--- Building application ---' &&
+      sh -c "echo '--- Generating Prisma client ---' &&
+             npm run db:generate &&
+             echo '--- Building application ---' &&
              npm run build &&
              echo '--- Deploying database migrations ---' &&
              npm run db:deploy &&
