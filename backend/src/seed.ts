@@ -1,5 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
@@ -7,7 +10,7 @@ async function main() {
   console.log('🌱 Starting database seed...');
 
   // Create admin user
-  const adminPassword = await bcrypt.hash('admin123', 10);
+  const adminPassword = await bcrypt.hash(process.env.DEFAULT_ADMIN_PASSWORD || 'admin123', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@bridge.local' },
     update: {},
@@ -54,7 +57,7 @@ async function main() {
   // No demo tournament - users can import their own PBN files
 
   console.log('✅ Database seeded successfully!');
-  console.log(`👤 Admin user: admin@bridge.local / admin123`);
+  console.log(`👤 Admin user: admin@bridge.local / (password from env)`);
   console.log(`👤 Test user: user@bridge.local / user123`);
 }
 
