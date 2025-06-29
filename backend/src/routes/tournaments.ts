@@ -210,7 +210,8 @@ router.post('/import-pbn', authenticateToken, requireAdmin, upload.single('pbnFi
     console.log(`Admin ${req.user?.username} uploading PBN file: ${req.file.originalname}`);
 
     // Define a public path for the PBN file within the backend's public directory
-    const publicDir = path.join(__dirname, '../../public/tournaments');
+    // Go up three levels from /dist/src/routes to the project root /app
+    const publicDir = path.join(__dirname, '../../../public/tournaments');
     if (!fs.existsSync(publicDir)) {
       fs.mkdirSync(publicDir, { recursive: true });
     }
