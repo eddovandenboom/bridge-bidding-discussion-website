@@ -44,6 +44,23 @@ services:
              echo '--- Starting backend server ---' &&
              npm run start"
 
+  # Prisma Studio UI
+  db-ui:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bridge_db_ui
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=postgresql://bridge_user:bridge_password@db:5432/bridge_discussion
+    depends_on:
+      - db
+    networks:
+      - bridge_network
+    command: >
+      sh -c "npm run db:generate && npm run db:studio"
+
   # Frontend
   frontend:
     build:
