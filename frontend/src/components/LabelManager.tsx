@@ -23,12 +23,14 @@ interface LabelManagerProps {
   boardId?: string;
   onLabelChange?: () => void;
   showBoardLabels?: boolean;
+  canCreateLabels?: boolean;
 }
 
-const LabelManager: React.FC<LabelManagerProps> = ({ 
-  boardId, 
-  onLabelChange, 
-  showBoardLabels = false 
+const LabelManager: React.FC<LabelManagerProps> = ({
+  boardId,
+  onLabelChange,
+  showBoardLabels = false,
+  canCreateLabels = false,
 }) => {
   const { isAuthenticated } = useAuth();
   const [labels, setLabels] = useState<Label[]>([]);
@@ -178,7 +180,7 @@ const LabelManager: React.FC<LabelManagerProps> = ({
         <h3 className="text-lg font-semibold text-gray-900">
           {showBoardLabels ? 'Board Label Voting' : 'Label Management'}
         </h3>
-        {isAuthenticated && !showBoardLabels && (
+        {canCreateLabels && (
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"

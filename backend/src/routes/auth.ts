@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -34,13 +34,13 @@ router.post('/register', async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
+    // Create user with PENDING_APPROVAL role
     const user = await prisma.user.create({
       data: {
         username,
         email,
         password: hashedPassword,
-        role: 'USER'
+        role: UserRole.PENDING_APPROVAL // New users start with PENDING_APPROVAL role
       },
       select: {
         id: true,
@@ -51,7 +51,7 @@ router.post('/register', async (req, res) => {
       }
     });
 
-    // Generate JWT token
+    // Generate JWT token (optional, might not be needed for pending approval users)
     const token = jwt.sign(
       { userId: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET || 'fallback-secret',
@@ -59,7 +59,7 @@ router.post('/register', async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'User created successfully',
+      message: 'User created successfully. Awaiting admin approval.',
       user,
       token
     });
@@ -144,6 +144,89 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.json({ user });
   } catch (error) {
     console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all users pending approval (Admin only)
+router.get('/users/pending', authenticateToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const pendingUsers = await prisma.user.findMany({
+      where: {
+        role: UserRole.PENDING_APPROVAL
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    res.json({ users: pendingUsers });
+  } catch (error) {
+    console.error('Error fetching pending users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update user role (Admin only)
+router.put('/users/:userId/role', authenticateToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!['ADMIN', 'USER', 'GUEST', 'PENDING_APPROVAL'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role provided' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: role as UserRole }, // Cast role to UserRole enum
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true
+      }
+    });
+
+    res.json({ message: 'User role updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete user (Admin only)
+router.delete('/users/:userId', authenticateToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

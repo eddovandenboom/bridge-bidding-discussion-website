@@ -6,6 +6,7 @@ import BoardPollList from './BoardPollList';
 import BiddingEntry from './BiddingEntry';
 import LabelManager from './LabelManager';
 import { boardAPI, API_BASE_URL } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Tournament {
   id: string;
@@ -46,6 +47,9 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
   initialBoardNumber = 1,
   onBack
 }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [currentBoardIndex, setCurrentBoardIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'comments' | 'polls' | 'create-poll' | 'bidding' | 'labels'>('comments');
@@ -291,6 +295,7 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
                 <LabelManager
                   boardId={currentBoard.id}
                   showBoardLabels={true}
+                  canCreateLabels={isAdmin}
                   onLabelChange={() => {
                     // Optionally refresh board data
                   }}

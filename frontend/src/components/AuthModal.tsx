@@ -25,13 +25,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
+          onClose();
+          setFormData({ username: '', email: '', password: '' });
       } else {
         await register(formData.username, formData.email, formData.password);
+
+        if (useAuth().user?.role === 'PENDING_APPROVAL') {
+          // Keep modal open to show the pending approval message
+        } else {
+          onClose();
+          setFormData({ username: '', email: '', password: '' });
+        }
       }
-      onClose();
-      setFormData({ username: '', email: '', password: '' });
-    } catch (error) {
-      // Error is handled by the auth context
+    } catch (err) {
+      
     } finally {
       setIsSubmitting(false);
     }
@@ -147,13 +154,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </p>
         </div>
 
-        {isLogin && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-md">
-            <p className="text-sm text-blue-800 font-medium mb-1">Demo Accounts:</p>
-            <p className="text-xs text-blue-700">Admin: admin@bridge.local / admin123</p>
-            <p className="text-xs text-blue-700">User: user@bridge.local / user123</p>
-          </div>
-        )}
       </div>
     </div>
   );

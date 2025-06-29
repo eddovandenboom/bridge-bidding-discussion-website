@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { tournamentAPI } from '../utils/api';
+import { tournamentAPI, authAPI } from '../utils/api';
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: 'ADMIN' | 'USER' | 'GUEST' | 'PENDING_APPROVAL';
+  createdAt: string;
+}
 
 interface TournamentStats {
   totalTournaments: number;
@@ -18,13 +26,16 @@ interface TournamentStats {
 }
 
 const AdminPanel: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUserRole } = useAuth();
   const [stats, setStats] = useState<TournamentStats | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
 
   // Check if user is admin
   const isAdmin = isAuthenticated && user?.role === 'ADMIN';
@@ -32,8 +43,23 @@ const AdminPanel: React.FC = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchStats();
+      fetchPendingUsers();
     }
   }, [isAdmin]);
+
+  const fetchPendingUsers = async () => {
+    try {
+      setUsersLoading(true);
+      setError(null);
+      const response = await authAPI.getPendingUsers();
+      setPendingUsers(response.users);
+    } catch (err) {
+      setError('Failed to load pending users.');
+      console.error('Error fetching pending users:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -101,6 +127,34 @@ const AdminPanel: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Failed to import PBN file');
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleApproveUser = async (userId: string, username: string) => {
+    if (!confirm(`Are you sure you want to approve user "${username}"?`)) {
+      return;
+    }
+    try {
+      setError(null);
+      await updateUserRole(userId, 'USER');
+      setImportResult(`Successfully approved user "${username}".`);
+      fetchPendingUsers(); // Refresh the list
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to approve user.');
+    }
+  };
+
+  const handleRejectUser = async (userId: string, username: string) => {
+    if (!confirm(`Are you sure you want to reject and delete user "${username}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      setError(null);
+      await authAPI.deleteUser(userId); // Assuming a deleteUser API exists or will be created
+      setImportResult(`Successfully rejected and deleted user "${username}".`);
+      fetchPendingUsers(); // Refresh the list
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reject user.');
     }
   };
 
@@ -175,6 +229,71 @@ const AdminPanel: React.FC = () => {
             </div>
           </div>
         ) : null}
+      </div>
+
+      {/* Pending User Approvals */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Pending User Approvals</h2>
+        {usersLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Loading pending users...</span>
+          </div>
+        ) : pendingUsers.length === 0 ? (
+          <div className="bg-gray-50 border border-gray-200 text-gray-700 px-4 py-3 rounded-lg">
+            No users pending approval.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Registered
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {pendingUsers.map((pendingUser) => (
+                  <tr key={pendingUser.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {pendingUser.username}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {pendingUser.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(pendingUser.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleApproveUser(pendingUser.id, pendingUser.username)}
+                        className="text-green-600 hover:text-green-800 mr-3"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleRejectUser(pendingUser.id, pendingUser.username)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* PBN Import */}

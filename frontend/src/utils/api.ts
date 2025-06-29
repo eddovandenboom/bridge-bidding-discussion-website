@@ -86,6 +86,20 @@ export const authAPI = {
   getCurrentUser: async () => {
     return await apiRequest('/auth/me');
   },
+  updateUserRole: async (userId: string, role: string) => {
+    return await apiRequest(`/auth/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+  },
+  getPendingUsers: async () => {
+    return await apiRequest('/auth/users/pending');
+  },
+  deleteUser: async (userId: string) => {
+    return await apiRequest(`/auth/users/${userId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Tournament and Board API functions
