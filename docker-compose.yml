@@ -25,8 +25,6 @@ services:
     environment:
       - DATABASE_URL=postgresql://bridge_user:bridge_password@db:5432/bridge_discussion
       - PORT=3001
-    ports:
-      - "3001:3001"
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -46,23 +44,41 @@ services:
              echo '--- Starting backend server ---' &&
              npm run start"
 
-  # Frontend (Development)
+  # Frontend
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: bridge_frontend
     env_file:
       - ./.env
-    ports:
-      - "5173:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     networks:
       - bridge_network
     command: >
-      sh -c "echo '--- Frontend starting with VITE_API_URL=$VITE_API_URL ---' && npm run dev"
+      sh -c "echo '--- Building frontend ---' &&
+             npm run build &&
+             echo '--- Serving frontend ---' &&
+             npm run preview"
+
+  # Caddy Reverse Proxy
+  caddy:
+    image: caddy:2-alpine
+    container_name: bridge_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - bridge_network
 
 volumes:
   postgres_data:

@@ -1,0 +1,5 @@
+bridgetalk.app {
+    reverse_proxy /api/* backend:3001
+    reverse_proxy /tournaments/* backend:3001
+    reverse_proxy frontend:5173
+}
