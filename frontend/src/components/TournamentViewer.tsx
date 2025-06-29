@@ -197,27 +197,11 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
       </div>
 
       {/* Main content area with side-by-side layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="flex flex-wrap gap-8 justify-center">
         
         {/* Left column: Board display */}
-        <div className="lg:col-span-6">
+        <div className="flex-grow-0 flex-shrink-0 basis-[1100px]">
           <div>
-            <div className="mb-4 text-center p-6">
-              {/* Labels */}
-              {currentBoard.labels && currentBoard.labels.length > 0 && (
-                <div className="flex justify-center flex-wrap gap-2 mt-3">
-                  {currentBoard.labels.map((boardLabel) => (
-                    <span
-                      key={boardLabel.id}
-                      className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full text-white"
-                      style={{ backgroundColor: boardLabel.label.color }}
-                    >
-                      {boardLabel.label.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* BridgeWebs Hand Viewer */}
             {tournament.pbnFileUrl && (() => {
@@ -236,7 +220,7 @@ const TournamentViewer: React.FC<TournamentViewerProps> = ({
         </div>
 
         {/* Right column: Tab navigation and content */}
-        <div className="lg:col-span-6">
+        <div className="flex-grow flex-shrink-0 basis-[600px]">
           <div className="bg-white rounded-lg shadow-md sticky top-8 overflow-hidden">
             {/* Tab headers */}
             <div className="border-b border-gray-200">

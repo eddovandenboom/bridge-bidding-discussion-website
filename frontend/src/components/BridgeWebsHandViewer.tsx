@@ -10,11 +10,17 @@ const BridgeWebsHandViewer: React.FC<BridgeWebsHandViewerProps> = ({ pbnFileUrl 
   const url = constructBridgeWebsUrl(pbnFileUrl);
 
   return (
-    <div className="w-full aspect-[840/507] rounded-lg shadow-md">
+    <div className="w-full aspect-[840/320] rounded-lg shadow-md overflow-hidden">
       <iframe
         src={url}
         title={`Double Dummy Solver - BridgeWebs`}
-        className="w-full h-full border-0 rounded-lg"
+        className="border-0 rounded-lg"
+        style={{
+          width: 'calc(100% / 1.3)',
+          height: 'calc(100% / 1.3)',
+          transform: 'scale(1.3)',
+          transformOrigin: '0 0',
+        }}
         sandbox="allow-scripts allow-same-origin"
       />
     </div>
