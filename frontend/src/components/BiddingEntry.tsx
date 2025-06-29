@@ -297,16 +297,6 @@ const BiddingEntry: React.FC<BiddingEntryProps> = ({
     );
   };
 
-  const getSeatColor = (seat: string): string => {
-    switch (seat) {
-      case 'NORTH': return 'bg-blue-100 text-blue-800';
-      case 'SOUTH': return 'bg-blue-100 text-blue-800';
-      case 'EAST': return 'bg-red-100 text-red-800';
-      case 'WEST': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const formatBiddingSequence = (bids: any[]): React.JSX.Element => {
     // Create a helper function to format individual bids
     const formatSingleBid = (bid: any): string => {

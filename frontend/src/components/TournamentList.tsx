@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { boardAPI } from '../utils/api';
-import BridgeHandSimple, { parsePBNHand } from './BridgeHandSimple';
 import BoardDiscussion from './BoardDiscussion';
 import SearchAndFilter from './SearchAndFilter';
 
@@ -248,26 +247,6 @@ const TournamentList: React.FC = () => {
                               </div>
                             )}
                           </div>
-                          
-                          <div className="text-xs space-y-1">
-                            <div className="flex items-center">
-                              <span className="font-bold text-black">♠</span>
-                              <span className="ml-1">{parsePBNHand(board.northHand).spades.map(c => c.rank).join('')}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <span className="font-bold text-red-600">♥</span>
-                              <span className="ml-1">{parsePBNHand(board.northHand).hearts.map(c => c.rank).join('')}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <span className="font-bold text-red-600">♦</span>
-                              <span className="ml-1">{parsePBNHand(board.northHand).diamonds.map(c => c.rank).join('')}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <span className="font-bold text-black">♣</span>
-                              <span className="ml-1">{parsePBNHand(board.northHand).clubs.map(c => c.rank).join('')}</span>
-                            </div>
-                            <p className="text-gray-500 text-center mt-2">North hand preview</p>
-                          </div>
 
                           <div className="mt-3 text-center">
                             <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
@@ -308,37 +287,6 @@ const TournamentList: React.FC = () => {
                     <h4 className="text-lg font-bold text-gray-800">Board {selectedBoard.boardNumber}</h4>
                     <p className="text-sm text-gray-600">Dealer: {selectedBoard.dealer}</p>
                     <p className="text-sm text-gray-600">{getVulnerabilityText(selectedBoard.vulnerability)}</p>
-                  </div>
-                </div>
-
-                {/* Bridge Table with proper spacing */}
-                <div className="relative min-h-[450px] flex items-center justify-center">
-                  {/* North */}
-                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
-                    <BridgeHandSimple hand={parsePBNHand(selectedBoard.northHand)} position="north" />
-                  </div>
-
-                  {/* West */}
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <BridgeHandSimple hand={parsePBNHand(selectedBoard.westHand)} position="west" />
-                  </div>
-
-                  {/* East */}
-                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                    <BridgeHandSimple hand={parsePBNHand(selectedBoard.eastHand)} position="east" />
-                  </div>
-
-                  {/* South */}
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                    <BridgeHandSimple hand={parsePBNHand(selectedBoard.southHand)} position="south" />
-                  </div>
-
-                  {/* Center - smaller and properly positioned */}
-                  <div className="h-20 w-28 bg-green-900 rounded-lg border-2 border-green-700 flex items-center justify-center shadow-lg">
-                    <div className="text-white text-xs font-semibold text-center">
-                      <div>Table</div>
-                      <div className="text-xs mt-1">Board {selectedBoard.boardNumber}</div>
-                    </div>
                   </div>
                 </div>
               </div>
